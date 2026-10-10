@@ -12,6 +12,7 @@ export default function Onboarding({ initialBook, onStart }: OnboardingProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [allowAi, setAllowAi] = useState(false);
+  const [aiProgress, setAiProgress] = useState('');
 
   const handleFile = async (file?: File): Promise<void> => {
     if (!file) return;
@@ -26,12 +27,13 @@ export default function Onboarding({ initialBook, onStart }: OnboardingProps) {
     setBusy(true);
     setError('');
     try {
-      const passages = await generateAiQuestions(selectedBook.passages);
+      const passages = await generateAiQuestions(selectedBook.passages, (done, total) => setAiProgress(`Generating questions: batch ${done} of ${total}…`));
       setSelectedBook({ ...selectedBook, passages });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI question generation failed. Local questions are still available.');
     } finally {
       setBusy(false);
+      setAiProgress('');
     }
   };
 
@@ -50,7 +52,7 @@ export default function Onboarding({ initialBook, onStart }: OnboardingProps) {
           <label className="field-label" htmlFor="pdf-upload">Choose a PDF (max 20 MB)</label>
           <input id="pdf-upload" className="field" type="file" accept="application/pdf,.pdf" disabled={busy}
             onChange={(event) => void handleFile(event.currentTarget.files?.[0])} />
-          {busy && <p className="modal-note" role="status">Reading PDF and preparing passages…</p>}
+          {busy && <p className="modal-note" role="status">{aiProgress || 'Reading PDF and preparing passages…'}</p>}
           {error && <p className="field-error" role="alert">{error}</p>}
           {selectedBook && <p className="pdf-success" role="status">Ready: {selectedBook.passages.length} passages with local questions. Start when you’re ready.</p>}
           {selectedBook && (
