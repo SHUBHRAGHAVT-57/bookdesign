@@ -122,7 +122,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }
     }
     if (!geminiKey) {
-      res.status(502).json({ error: 'OpenAI could not answer. Configure GEMINI_API_KEY to enable the Gemini fallback.' });
+      res.status(502).json({ error: 'Groq could not answer and no Gemini fallback is configured. Check GROQ_API_KEY or add GEMINI_API_KEY; local reading and typing features remain available.' });
       return;
     }
     const listResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': geminiKey } });
