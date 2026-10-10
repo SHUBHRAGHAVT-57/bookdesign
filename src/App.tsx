@@ -80,11 +80,11 @@ export default function App() {
     setTransition('success');
     const finish = (): void => {
       const targetIndex = passages.findIndex((p) => p.id === passageId);
-      const target = PASSAGES[targetIndex];
+      const target = passages[targetIndex];
       if (target) {
         if (targetIndex % 2 === 0 && targetIndex + 1 < passages.length) {
           setState((s) => {
-            const completed = completePage(s, target, Date.now(), passages);
+            const completed = completePage(s, target, Date.now());
             return { ...completed, phase: 'typing', pageIndex: targetIndex + 1 };
           });
         } else {
@@ -120,7 +120,7 @@ export default function App() {
       return;
     }
     if (settings.reducedMotion) {
-      setState((s) => continueAfterRecall(s, passage));
+      setState((s) => continueAfterRecall(s, passage, passages));
       return;
     }
     setState((s) => ({ ...s, phase: 'typing' }));
@@ -347,7 +347,7 @@ export default function App() {
                 ) : <p className="prose">You have reached the end of Small Wonders.</p>
               }
             />
-            <StatsPanel book={summary} totalPages={PASSAGES.length} />
+            <StatsPanel book={summary} totalPages={passages.length} />
           </>
         )}
 
