@@ -101,11 +101,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }),
     });
     if (!response.ok) {
-      res.status(response.status === 429 ? 429 : 502).json({
-        error: response.status === 429
-          ? 'The AI question service is busy or rate-limited. Try again later.'
-          : 'The AI question service could not complete this request. Local questions are still available.',
-      });
+      // Keep provider credentials and raw error payloads private, but give the user
+      // a useful next step for common configuration and quota failures.
+      const status = response.status;
+      const message = status === 400
+        ? 'Gemini rejected the request. Check the model/API configuration and try again. Local questions are still available.'
+        : status === 401 || status === 403
+          ? 'Gemini did not authorize this API key. Check that GEMINI_API_KEY is valid and enabled for the Gemini API. Local questions are still available.'
+          : status === 404
+            ? 'The configured Gemini model was not found for this API. Check the model name in the server endpoint. Local questions are still available.'
+            : status === 429
+              ? 'Gemini is rate-limited or the API quota is exhausted. Check your AI Studio quota/billing and try again later. Local questions are still available.'
+              : 'Gemini could not complete this request (provider status ' + status + '). Local questions are still available.';
+      res.status(status === 429 ? 429 : 502).json({ error: message });
       return;
     }
     const payload: unknown = await response.json();
