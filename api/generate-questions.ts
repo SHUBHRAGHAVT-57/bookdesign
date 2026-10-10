@@ -113,7 +113,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       ? modelPayload.models.filter((item): item is Record<string, unknown> =>
           isRecord(item) &&
           typeof item.name === 'string' &&
-          /^models\\/[a-zA-Z0-9._-]+$/.test(item.name) &&
+          /^models\/[a-zA-Z0-9._-]+$/.test(item.name) &&
           Array.isArray(item.supportedGenerationMethods) &&
           item.supportedGenerationMethods.includes('generateContent'))
       : [];
