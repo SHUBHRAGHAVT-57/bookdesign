@@ -13,12 +13,14 @@ test('demo flow, refresh restoration, reset and accessibility', async ({ page })
   page.on('console', (message) => { if (message.type() === 'error' || message.type() === 'warning') browserErrors.push(message.text()); });
   page.on('pageerror', (error) => browserErrors.push(error.message));
   await startBook(page);
-  const source = (await page.locator('.source-text').innerText()).replace(/\s+/g, ' ').trim();
-  const textarea = page.getByRole('textbox', { name: /type the source passage/i });
+  const source = (await page.locator('.page-left .typed-text').innerText()).replace(/\s+/g, ' ').trim();
+  const textarea = page.getByRole('textbox', { name: 'Type the passage on the left page' });
+  const otherPage = page.getByRole('textbox', { name: 'Type the passage on the right page' });
   const typoAt = source.indexOf('photosynthesis') + 8;
   expect(typoAt).toBeGreaterThan(7);
   await expect(page.getByRole('region', { name: 'Live typing stats' })).toBeVisible();
   await textarea.pressSequentially(source.slice(0, typoAt), { delay: 8 });
+  await expect(otherPage).toHaveValue(source.slice(0, typoAt));
   await textarea.pressSequentially('x', { delay: 8 });
   await textarea.press('Backspace');
   const completionVisible = page.locator('.toast').waitFor({ state: 'visible', timeout: 10_000 });
@@ -37,13 +39,16 @@ test('demo flow, refresh restoration, reset and accessibility', async ({ page })
   await page.getByRole('button', { name: 'Next page' }).click();
   await expect(page.locator('.page-title').first()).toHaveText('The Water Cycle', { timeout: 5_000 });
 
-  const secondPage = (await page.locator('.source-text').innerText()).replace(/\s+/g, ' ').trim();
+  const secondPage = (await page.locator('.page-left .typed-text').innerText()).replace(/\s+/g, ' ').trim();
   await textarea.pressSequentially(secondPage.slice(0, 24), { delay: 8 });
   await page.reload();
   await expect(textarea).toHaveValue(secondPage.slice(0, 24));
+  await expect(otherPage).toHaveValue(secondPage.slice(0, 24));
   await page.getByRole('button', { name: 'Page 1' }).click();
   await expect(textarea).toHaveValue(/photosynthesis/);
+  await expect(otherPage).toHaveValue(/photosynthesis/);
   expect(await textarea.evaluate((element: HTMLTextAreaElement) => element.readOnly)).toBe(true);
+  expect(await otherPage.evaluate((element: HTMLTextAreaElement) => element.readOnly)).toBe(true);
   await page.getByRole('button', { name: 'Return to current page' }).click();
   await expect(textarea).toHaveValue(secondPage.slice(0, 24));
 
