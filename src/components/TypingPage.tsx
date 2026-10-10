@@ -17,17 +17,21 @@ const WordGroup = memo(function WordGroup({ chars, typedPart, cursor, wordLength
   const cells: ReactElement[] = [];
   for (let i = 0; i < chars.length; i++) {
     let state = 'up';
+    // A typo stays at the expected character: show the target glyph in red,
+    // never the incorrect key the learner pressed.
+    const lockedIndex = typedPart.length > 0 && typedPart[typedPart.length - 1] !== chars[typedPart.length - 1]
+      ? typedPart.length - 1
+      : -1;
     let shown = chars[i];
     if (i < typedPart.length) {
       if (typedPart[i] === chars[i]) {
         state = 'ink';
       } else {
         state = 'bad';
-        shown = typedPart[i];
       }
-    } else if (i === cursor) {
-      state = 'cur';
     }
+    if (i === lockedIndex) state = 'bad cur';
+    else if (i === cursor && lockedIndex === -1) state = 'cur';
     cells.push(
       <span key={i} className={`ch ${state}`}>
         {shown}
