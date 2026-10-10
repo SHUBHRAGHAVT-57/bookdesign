@@ -69,7 +69,7 @@ export default function AssistantPanel({ bookTitle, passage, pageNumber, onClose
       if (!response.ok || typeof data.reply !== 'string') {
         throw new Error(typeof data.error === 'string' ? data.error : 'The assistant could not respond. Try again.');
       }
-      setMessages((current) => [...current, { role: 'assistant', content: data.reply as string }].slice(-30));
+      setMessages((current) => [...current, { role: 'assistant' as const, content: data.reply as string }].slice(-30));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Something went wrong. Please try again.');
     } finally {
