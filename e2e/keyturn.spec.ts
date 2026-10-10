@@ -5,7 +5,7 @@ import AxeBuilder from '@axe-core/playwright';
 
 async function startBook(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Open the demo book' }).click();
+  await page.getByRole('button', { name: 'Start practice' }).click();
 }
 
 test('demo flow, refresh restoration, reset and accessibility', async ({ page }) => {
@@ -34,7 +34,13 @@ test('demo flow, refresh restoration, reset and accessibility', async ({ page })
   await page.reload();
   await expect(page.getByRole('dialog')).toContainText('Quick recall');
   await page.getByLabel('Your answer').fill('condenses into droplets');
-  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.getByRole('button', { name: 'Next question' }).click();
+  await page.getByLabel('Your answer').fill('sunlight');
+  await page.getByRole('button', { name: 'Next question' }).click();
+  await page.getByLabel('Your answer').fill('vapour');
+  await page.getByRole('button', { name: 'Next question' }).click();
+  await page.getByLabel('Your answer').fill('clouds');
+  await page.getByRole('button', { name: 'Finish recall' }).click();
   await page.getByRole('button', { name: 'Next page' }).click();
   await expect(page.locator('.page-title').first()).toHaveText('Why Habits Stick', { timeout: 5_000 });
 
@@ -55,7 +61,7 @@ test('demo flow, refresh restoration, reset and accessibility', async ({ page })
 
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await page.getByRole('button', { name: 'Reset demo' }).last().click();
-  await expect(page.getByRole('button', { name: 'Open the demo book' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start practice' })).toBeVisible();
   expect(browserErrors).toEqual([]);
 });
 
@@ -83,7 +89,13 @@ test('Demo assist jumps pages and auto-types with a real typo correction', async
   await page.getByRole('button', { name: 'Auto-type with correction' }).click();
   await expect(page.getByRole('dialog')).toContainText('Quick recall', { timeout: 20_000 });
   await page.getByLabel('Your answer').fill('condenses into droplets');
-  await page.getByRole('button', { name: 'Check answer' }).click();
+  await page.getByRole('button', { name: 'Next question' }).click();
+  await page.getByLabel('Your answer').fill('sunlight');
+  await page.getByRole('button', { name: 'Next question' }).click();
+  await page.getByLabel('Your answer').fill('vapour');
+  await page.getByRole('button', { name: 'Next question' }).click();
+  await page.getByLabel('Your answer').fill('clouds');
+  await page.getByRole('button', { name: 'Finish recall' }).click();
   await page.getByRole('button', { name: 'Start Echo Review' }).click();
   await expect(page.getByRole('dialog')).toContainText('evaporation');
 });
@@ -92,8 +104,8 @@ test('corrupt storage recovers and 375px layout has no horizontal scroll', async
   await page.goto('/');
   await page.evaluate(() => localStorage.setItem('keyturn.memory-edition', '{broken-json'));
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Open the demo book' })).toBeVisible();
-  await page.getByRole('button', { name: 'Open the demo book' }).click();
+  await expect(page.getByRole('button', { name: 'Start practice' })).toBeVisible();
+  await page.getByRole('button', { name: 'Start practice' }).click();
 
   const screenshots = join(process.cwd(), 'docs', 'screenshots');
   await mkdir(screenshots, { recursive: true });
@@ -124,7 +136,7 @@ test('production shell reloads with the network offline', async ({ page, context
   await context.setOffline(true);
   try {
     await page.reload();
-    await expect(page.getByRole('button', { name: 'Open the demo book' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start practice' })).toBeVisible();
   } finally {
     await context.setOffline(false);
   }
