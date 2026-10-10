@@ -60,7 +60,8 @@ export default function App() {
     sequenceRunning.current = false;
   };
 
-  // Success state -> page turn -> recall. Safe to call again after a refresh.
+  // Typing completion leads to recall first; page turning happens after recall/review.
+  // Safe to call again after a refresh.
   const beginCompletion = (passageId: string): void => {
     if (sequenceRunning.current) return;
     sequenceRunning.current = true;
@@ -73,17 +74,39 @@ export default function App() {
       setTransition('idle');
       sequenceRunning.current = false;
     };
+    timers.current.push(window.setTimeout(finish, reduced ? 600 : SUCCESS_MS));
+  };
+
+  // Hide the recall/review dialog while the current leaf turns, then advance the
+  // persisted book state only after the animation has finished.
+  const turnToNextPage = (finish: () => void): void => {
+    if (settings.reducedMotion) {
+      finish();
+      return;
+    }
+    setTransition('turning');
+    play('turn');
     timers.current.push(
       window.setTimeout(() => {
-        if (reduced) {
-          finish();
-          return;
-        }
-        setTransition('turning');
-        play('turn');
-        timers.current.push(window.setTimeout(finish, TURN_MS));
-      }, reduced ? 600 : SUCCESS_MS),
+        finish();
+        setTransition('idle');
+      }, TURN_MS),
     );
+  };
+
+  const handleRecallContinue = (): void => {
+    if (progress.echo) {
+      setState((s) => continueAfterRecall(s, passage));
+      return;
+    }
+    if (settings.reducedMotion) {
+      setState((s) => continueAfterRecall(s, passage));
+      return;
+    }
+    setState((s) => ({ ...s, phase: 'typing' }));
+    turnToNextPage(() => {
+      setState((s) => continueAfterRecall({ ...s, phase: 'recall' }, passage));
+    });
   };
 
   // If the page was refreshed right after the last character was typed, continue the sequence.
@@ -111,7 +134,14 @@ export default function App() {
 
   const handleEchoDone = (result: EchoResult): void => {
     if (result.solved) play('chime');
-    setState((s) => recordEcho(s, passage, result));
+    if (settings.reducedMotion) {
+      setState((s) => recordEcho(s, passage, result));
+      return;
+    }
+    setState((s) => ({ ...s, phase: 'typing' }));
+    turnToNextPage(() => {
+      setState((s) => recordEcho({ ...s, phase: 'echo' }, passage, result));
+    });
   };
 
   const updateSettings = (next: Settings): void => setState((s) => ({ ...s, settings: next }));
@@ -311,7 +341,7 @@ export default function App() {
           echoPlan={progress.echo}
           isLast={isLastPage}
           onSubmit={handleRecallSubmit}
-          onContinue={() => setState((s) => continueAfterRecall(s, passage))}
+          onContinue={handleRecallContinue}
         />
       )}
 
