@@ -145,7 +145,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (!response || !response.ok) {
       // Keep provider credentials and raw error payloads private, but give the user
       // a useful next step for common configuration and quota failures.
-      const status = response.status;
+      const status = response?.status ?? 502;
       const message = status === 400
         ? 'Gemini rejected the request for every available Flash model. Check Gemini API access and model availability. Local questions are still available.'
         : status === 401 || status === 403
