@@ -123,7 +123,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const candidates = [
       ...preferredNames.map((name) => flashModels.find((item) => item.name === name)).filter((item): item is Record<string, unknown> => !!item),
       ...flashModels.filter((item) => !preferredNames.includes(String(item.name))),
-    ];
+    ].slice(0, 3);
     if (!candidates.length) {
       res.status(502).json({ error: 'This Gemini API key has no available Flash text model. Check Gemini API access in Google AI Studio. Local questions are still available.' });
       return;
@@ -132,6 +132,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     for (const model of candidates) {
       const modelId = String(model.name).replace(/^models\//, '');
       const attempt = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`, {
+        signal: AbortSignal.timeout(12000),
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify({
