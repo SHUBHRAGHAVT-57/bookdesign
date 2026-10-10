@@ -47,7 +47,7 @@ export default function Onboarding({ initialBook, onStart }: OnboardingProps) {
       </div>
       <div className="cover-page">
         <h3 className="cover-heading">Make this book yours</h3>
-        <p className="cover-note">Upload a text-based PDF and KeyTurn will turn its text into typing practice passages. Your file is processed in your browser; it is not uploaded to a KeyTurn server.</p>
+        <p className="cover-note">Upload a text-based PDF to create your own typing-practice book. The PDF is read in your browser and is never uploaded to KeyTurn.</p>
         <div className="pdf-upload">
           <label className="field-label" htmlFor="pdf-upload">Choose a PDF (max 20 MB)</label>
           <input id="pdf-upload" className="field" type="file" accept="application/pdf,.pdf" disabled={busy}
@@ -59,9 +59,9 @@ export default function Onboarding({ initialBook, onStart }: OnboardingProps) {
             <div className="ai-question-option">
               <label className="ai-consent">
                 <input type="checkbox" checked={allowAi} onChange={(event) => setAllowAi(event.currentTarget.checked)} disabled={busy} />
-                <span>I agree to send extracted passage text to Google Gemini to improve the questions.</span>
+                <span>Optional: send extracted passage text to Groq (with Gemini fallback) to improve the questions.</span>
               </label>
-              <p className="modal-note">Optional: only extracted passages are sent, not the PDF file. This uses an external AI service and may incur service costs. If you leave this unchecked, local questions remain available.</p>
+              <p className="modal-note">Only extracted passage text is sent to the AI provider, never the PDF itself. Provider free-tier limits apply. Local questions work without AI and remain available if the AI quota is exhausted.</p>
               <button type="button" className="btn" onClick={() => void enhanceQuestions()} disabled={!allowAi || busy}>
                 {busy ? 'Generating questions…' : 'Improve questions with AI'}
               </button>
