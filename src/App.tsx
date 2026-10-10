@@ -161,11 +161,21 @@ export default function App() {
 
   const handleType = (raw: string): void => {
     if (phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping) return;
-    const result = applyTyping(progress, raw, passage.text, wordMap, Date.now());
+    // Strict mode: when the last character is wrong, the next key replaces
+    // that character instead of appending past it. This lets the learner correct
+    // the typo directly; progress remains locked at the expected character.
+    const lastIndex = progress.typed.length - 1;
+    const hasLockedMistake = lastIndex >= 0 && progress.typed[lastIndex] !== passage.text[lastIndex];
+    const nextRaw = hasLockedMistake && raw.length > progress.typed.length
+      ? progress.typed.slice(0, lastIndex) + raw.slice(-1)
+      : raw;
+    const result = applyTyping(progress, nextRaw, passage.text, wordMap, Date.now());
     if (!result.changed) return;
     setState((s) => ({ ...s, pages: { ...s.pages, [passage.id]: result.progress } }));
-    if (result.addedIncorrect > 0) play('error');
-    else if (result.addedCorrect > 0) play('key');
+    if (result.addedIncorrect > 0) {
+      play('error');
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(45);
+    } else if (result.addedCorrect > 0) play('key');
     if (result.complete) beginCompletion(passage.id);
   };
 
