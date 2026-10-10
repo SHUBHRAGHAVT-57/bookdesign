@@ -25,6 +25,7 @@ test('demo flow, refresh restoration, reset and accessibility', async ({ page })
   await textarea.pressSequentially(source.slice(typoAt), { delay: 8 });
   await completionVisible;
   await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.locator('.page-right.is-turning')).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('dialog')).toContainText('Quick recall');
   await page.getByLabel('Your answer').fill('oxygen');
@@ -34,6 +35,7 @@ test('demo flow, refresh restoration, reset and accessibility', async ({ page })
   await page.getByLabel('Missing word').fill('photosynthesis');
   await page.getByRole('button', { name: 'Check word' }).click();
   await page.getByRole('button', { name: 'Next page' }).click();
+  await expect(page.locator('.page-title').first()).toHaveText('The Water Cycle', { timeout: 5_000 });
 
   const secondPage = (await page.locator('.source-text').innerText()).replace(/\s+/g, ' ').trim();
   await textarea.pressSequentially(secondPage.slice(0, 24), { delay: 8 });
