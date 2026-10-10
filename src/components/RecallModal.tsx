@@ -48,8 +48,8 @@ export default function RecallModal({ passage, questions, result, echoPlan, isLa
   };
 
   const continueLabel = echoPlan ? 'Start Echo Review' : isLast ? 'Finish the book' : 'Next page';
-  const correctCount = result?.correctCount ?? (result?.correct ? 1 : 0);
-  const totalQuestions = result?.totalQuestions ?? questions.length;
+  const totalQuestions = result?.totalQuestions ?? (result?.correctCount === undefined ? 1 : questions.length);
+  const correctCount = result?.correctCount ?? (result?.correct ? totalQuestions : 0);
 
   return (
     <Modal labelledBy="recall-title" describedBy="recall-prompt">
@@ -96,7 +96,6 @@ export default function RecallModal({ passage, questions, result, echoPlan, isLa
             </span>
           </p>
           <p className="modal-note">Your responses: {result.answer}</p>
-          {!result.correct && <p className="modal-note">Model answer for the first question: {passage.question.modelAnswer}</p>}
           <p className="modal-note">
             {echoPlan
               ? `Next up: an Echo Review on “${echoPlan.word}”.`
