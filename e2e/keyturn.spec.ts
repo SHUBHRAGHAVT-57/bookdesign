@@ -76,11 +76,16 @@ test('Demo assist jumps pages and auto-types with a real typo correction', async
   await page.getByLabel('Typing speed').selectOption('70');
   await page.getByLabel('Scripted stumble').selectOption('photosynthesis');
   await page.getByRole('button', { name: 'Auto-type with correction' }).click();
+  await expect(page.locator('.page-title').nth(1)).toHaveText('The Water Cycle', { timeout: 20_000 });
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByLabel('Scripted stumble').selectOption('evaporation');
+  await page.getByRole('button', { name: 'Auto-type with correction' }).click();
   await expect(page.getByRole('dialog')).toContainText('Quick recall', { timeout: 20_000 });
-  await page.getByLabel('Your answer').fill('oxygen');
+  await page.getByLabel('Your answer').fill('condenses into droplets');
   await page.getByRole('button', { name: 'Check answer' }).click();
   await page.getByRole('button', { name: 'Start Echo Review' }).click();
-  await expect(page.getByRole('dialog')).toContainText('photosynthesis');
+  await expect(page.getByRole('dialog')).toContainText('evaporation');
 });
 
 test('corrupt storage recovers and 375px layout has no horizontal scroll', async ({ page }) => {
