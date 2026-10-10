@@ -39,7 +39,7 @@ export function generateLocalQuestions(passages: Passage[]): Passage[] {
     } else if (kind === 'vocabulary') {
       question = {
         type: kind,
-        prompt: `What important term appears in this passage?`,
+        prompt: `Which term matches this description: ${definitionSentence}`,
         accepted: [vocabularyTerm],
         modelAnswer: `“${vocabularyTerm}” is an important term in this passage. Context: ${definitionSentence}`,
         concept: vocabularyTerm,
