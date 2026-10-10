@@ -86,7 +86,7 @@ function advance(state: AppState, passages: Passage[] = PASSAGES): AppState {
 }
 
 /** Typing finished: lock the page, find the weak word, remember struggles. */
-export function completePage(state: AppState, passage: Passage, now: number, passages: Passage[] = PASSAGES): AppState {
+export function completePage(state: AppState, passage: Passage, now: number): AppState {
   if (state.phase !== 'typing') return state;
   const progress = state.pages[passage.id];
   if (!progress || progress.typed !== passage.text) return state;
