@@ -224,9 +224,6 @@ export default function App() {
   const summary = summarizeBook(state);
   const showBook = phase === 'typing' || phase === 'recall' || phase === 'echo';
   const typingActive = phase === 'typing' && transition === 'idle' && reviewIndex === null;
-  const currentWord = phase !== 'typing' || reviewIndex !== null || pageComplete
-    ? -1
-    : wordMap.charToWord[Math.min(progress.typed.length, passage.text.length - 1)];
   const demoWords = passage.concepts.filter((word) =>
     passage.text.toLowerCase().indexOf(word.toLowerCase(), progress.typed.length) >= progress.typed.length,
   );
