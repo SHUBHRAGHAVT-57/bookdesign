@@ -45,9 +45,10 @@ export async function generateAiQuestions(passages: Passage[]): Promise<Passage[
     for (const item of payload.questions) {
       if (typeof item !== 'object' || item === null) continue;
       const value = item as Record<string, unknown>;
-      if (typeof value.id === 'string' && isQuestion(value)) {
+      const passageId = value['id'];
+      if (typeof passageId === 'string' && isQuestion(value)) {
         generated.push({
-          id: value.id,
+          id: passageId,
           question: {
             type: value.type,
             prompt: value.prompt,
