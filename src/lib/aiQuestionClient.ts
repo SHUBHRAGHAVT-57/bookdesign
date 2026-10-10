@@ -35,9 +35,9 @@ export async function generateAiQuestions(passages: Passage[], onProgress?: (don
       });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'TimeoutError') {
-        throw new Error('Gemini took too long to answer. Your local questions are safe; try again later or continue without AI.');
+        throw new Error('The AI provider took too long to answer. Your local questions are safe; try again later or continue without AI.');
       }
-      throw new Error('Could not reach Gemini. Your local questions are safe; check your connection or try again later.');
+      throw new Error('Could not reach the AI provider. Your local questions are safe; check your connection or try again later.');
     }
 
     let payload: ApiResponse;
