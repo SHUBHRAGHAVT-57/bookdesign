@@ -759,7 +759,7 @@ button, input, textarea {
 /* ---------- Cover / onboarding ---------- */
 .cover {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   max-width: 940px;
   margin: 28px auto 0;
   border-radius: 8px;
@@ -767,6 +767,7 @@ button, input, textarea {
   animation: arrive 0.45s ease-out;
 }
 .cover-board {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -804,6 +805,8 @@ button, input, textarea {
   text-transform: uppercase;
 }
 .cover-page {
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: clamp(24px, 4vw, 44px);
   background: var(--paper);
   background-image: var(--grain);
@@ -1456,7 +1459,7 @@ button, input, textarea {
 
 /* ---------- User PDF import ---------- */
 .pdf-upload { margin: 18px 0 22px; padding: 16px; border: 1px dashed var(--line); border-radius: 8px; background: rgba(255, 253, 246, 0.55); }
-.pdf-upload .field { width: 100%; min-width: 0; }
+.pdf-upload .field { display: block; width: 100%; max-width: 100%; min-width: 0; }
 .pdf-success { color: var(--accent); font-size: 0.9rem; font-weight: 700; }
 .pdf-upload button { margin-top: 8px; }
 
