@@ -10,10 +10,11 @@ interface GroupProps {
   /** Index of the next character to type inside this group, or -1. */
   cursor: number;
   wordLength: number;
+  errorIndex: number;
 }
 
 /** One word (and its trailing space). Memoised so only the word being typed re-renders. */
-const WordGroup = memo(function WordGroup({ chars, typedPart, cursor, wordLength }: GroupProps) {
+const WordGroup = memo(function WordGroup({ chars, typedPart, cursor, wordLength, errorIndex }: GroupProps) {
   const cells: ReactElement[] = [];
   for (let i = 0; i < chars.length; i++) {
     let state = 'up';
@@ -30,7 +31,8 @@ const WordGroup = memo(function WordGroup({ chars, typedPart, cursor, wordLength
         state = 'bad';
       }
     }
-    if (i === lockedIndex) state = 'bad cur';
+    if (i === errorIndex) state = 'bad cur';
+    else if (i === lockedIndex) state = 'bad cur';
     else if (i === cursor && lockedIndex === -1) state = 'cur';
     cells.push(
       <span key={i} className={`ch ${state}`}>
@@ -60,6 +62,7 @@ interface TypingPageProps {
 export default function TypingPage({ passageId, target, map, typed, disabled, complete, ariaLabel, onType }: TypingPageProps) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
+  const [errorIndex, setErrorIndex] = useState<number | null>(null);
 
   // Put the cursor on the new page automatically (not while a modal or page turn is active).
   useEffect(() => {
@@ -95,7 +98,23 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
   const wrong = countWrong(typed, target);
   const helpId = ariaLabel.includes('left page') ? 'typing-help-left' : 'typing-help-right';
 
-  const onChange = (event: ChangeEvent<HTMLTextAreaElement>): void => onType(event.target.value);
+  const onChange = (event: ChangeEvent<HTMLTextAreaElement>): void => {
+    const raw = event.target.value;
+    // Reject an incorrect key before it enters the controlled text. Mark the
+    // expected glyph red and keep the cursor at this position until correct.
+    if (raw.length > typed.length && raw.slice(0, typed.length) === typed) {
+      const entered = raw[typed.length];
+      if (entered !== target[typed.length]) {
+        setErrorIndex(typed.length);
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(45);
+        return;
+      }
+      setErrorIndex(null);
+    } else if (raw.length < typed.length) {
+      setErrorIndex(null);
+    }
+    onType(raw);
+  };
   const block = (event: ClipboardEvent<HTMLTextAreaElement> | DragEvent<HTMLTextAreaElement>): void =>
     event.preventDefault();
   // The caret always stays at the end, like writing on a page: you only ever add or delete the latest ink.
@@ -107,7 +126,7 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
 
   let statusText = '';
   if (complete) statusText = 'Page complete. Every line is now ink.';
-  else if (wrong > 0) statusText = `${wrong} ${wrong === 1 ? 'mistake' : 'mistakes'} to fix. Press Backspace.`;
+  else if (errorIndex !== null || wrong > 0) statusText = 'Incorrect key. The expected character is highlighted in red.';
 
   return (
     <div className="typing">
@@ -124,6 +143,7 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
                 typedPart={typed.slice(word.start, groupEnd)}
                 cursor={inGroup ? typed.length - word.start : -1}
                 wordLength={word.end - word.start}
+              errorIndex={errorIndex !== null && errorIndex >= word.start && errorIndex < groupEnd ? errorIndex - word.start : -1}
               />
             );
           })}
