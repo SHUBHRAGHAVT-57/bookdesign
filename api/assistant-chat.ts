@@ -32,9 +32,10 @@ function validateMessages(value: unknown): ChatMessage[] | null {
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); res.status(405).json({ error: 'Use POST to chat with the assistant.' }); return; }
+  const groqKey = process.env.GROQ_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
-  if (!openaiKey && !geminiKey) { res.status(503).json({ error: 'The AI assistant is not configured yet. Add OPENAI_API_KEY or GEMINI_API_KEY in Vercel project environment variables.' }); return; }
+  if (!groqKey && !geminiKey && !(openaiKey && process.env.ENABLE_PAID_OPENAI === 'true')) { res.status(503).json({ error: 'The AI assistant is not configured yet. Add GROQ_API_KEY for free-tier AI or GEMINI_API_KEY for Gemini fallback.' }); return; }
   const body = parseBody(req.body) as RequestBody | null;
   const context = body?.context;
   const bookTitle = cleanText(body?.bookTitle, 160);
@@ -57,7 +58,38 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     'Current passage text:\n' + passageText,
   ].join('\n\n');
   try {
-    // Prefer OpenAI for tutoring quality; retain Gemini as a fallback.
+    // Use Groq first; Gemini remains the fallback. Paid OpenAI is opt-in only.
+    if (groqKey) {
+      try {
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          signal: AbortSignal.timeout(15000),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + groqKey },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.55,
+            max_tokens: 700,
+            messages: [
+              { role: 'system', content: systemInstruction },
+              ...messages.map((message) => ({ role: message.role, content: message.content })),
+            ],
+          }),
+        });
+        if (groqResponse.ok) {
+          const groqPayload: unknown = await groqResponse.json();
+          const choices = isRecord(groqPayload) && Array.isArray(groqPayload.choices) ? groqPayload.choices : [];
+          const choice = choices[0];
+          const message = isRecord(choice) && isRecord(choice.message) ? choice.message : null;
+          const reply = message && typeof message.content === 'string' ? message.content.trim() : '';
+          if (reply) {
+            res.status(200).json({ reply: reply.slice(0, 5000), provider: 'groq' });
+            return;
+          }
+        }
+      } catch {
+        // Continue to Gemini fallback on timeout or provider errors.
+      }
+    }
     if (openaiKey && process.env.ENABLE_PAID_OPENAI === 'true') {
       try {
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
