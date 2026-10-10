@@ -835,6 +835,80 @@ button, input, textarea {
   font-size: 0.9rem;
   color: var(--faint-strong);
 }
+
+/* PDF upload is a primary onboarding action; keep it visible and touch-friendly. */
+.pdf-upload {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 253, 246, 0.72);
+}
+.pdf-upload .field-label {
+  display: block;
+  font-weight: 700;
+  color: var(--ink);
+}
+.pdf-upload input[type="file"] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf6;
+  color: var(--ink);
+}
+.pdf-upload .ai-question-option {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.pdf-upload .ai-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.pdf-upload .ai-consent input {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+.pdf-upload .modal-note,
+.pdf-upload .pdf-success {
+  color: var(--faint-strong);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+.pdf-upload .pdf-success {
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+.cover-page .pdf-upload .btn {
+  align-self: stretch;
+}
+@media (max-width: 760px) {
+  .cover {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 12px;
+  }
+  .cover-board {
+    min-height: 220px;
+    padding: 36px 28px;
+    border-radius: 8px 8px 0 0;
+  }
+  .cover-page {
+    border-radius: 0 0 8px 8px;
+    padding: 24px 20px;
+  }
+}
 .cover-page .btn {
   align-self: flex-start;
 }
