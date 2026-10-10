@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import type { Passage } from '../types';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
@@ -38,7 +39,7 @@ export default function AssistantPanel({ bookTitle, passage, pageNumber, onClose
     setMessages(readHistory(storageKey));
   }, [storageKey]);
 
-  const send = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const send = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     const prompt = draft.trim();
     if (!prompt || busy) return;
