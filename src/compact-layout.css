@@ -1,0 +1,172 @@
+/* Compact, laptop-first reading and typing layout. Loaded after the base theme. */
+:root {
+  --page-pad: clamp(16px, 1.6vw, 24px);
+  --book-size: clamp(0.94rem, 0.9rem + 0.12vw, 1.02rem);
+}
+
+.app-header {
+  max-width: 1320px;
+  padding-top: 10px;
+  padding-bottom: 6px;
+  gap: 8px 16px;
+}
+
+.app-main {
+  max-width: 1320px;
+  padding-top: 6px;
+  padding-bottom: 24px;
+}
+
+.header-actions {
+  flex-wrap: wrap;
+}
+
+.live-stats {
+  margin-bottom: 10px;
+  padding: 8px 14px;
+  gap: 4px 18px;
+}
+
+.live-list dd,
+.live-main dd {
+  font-size: 1.15rem;
+}
+
+.book {
+  padding: 12px 12px 16px;
+  border-radius: 9px;
+}
+
+.book::before {
+  inset: 5px;
+}
+
+.book .spread {
+  box-shadow:
+    0 1px 0 #e6dcc2,
+    0 2px 0 #d8cdb0,
+    0 3px 0 #e6dcc2,
+    0 4px 0 #d3c7a8,
+    0 10px 24px var(--shadow);
+}
+
+.page {
+  min-height: clamp(390px, calc(100dvh - 285px), 540px);
+  padding: var(--page-pad);
+}
+
+.page-head {
+  gap: 8px;
+  padding-bottom: 7px;
+  font-size: 0.66rem;
+  letter-spacing: 0.055em;
+}
+
+.page-title {
+  margin: 13px 0 10px;
+  font-size: clamp(1.2rem, 1.1rem + 0.25vw, 1.45rem);
+  line-height: 1.2;
+}
+
+.prose {
+  font-size: var(--book-size);
+  line-height: 1.62;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.typing-help {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.page-foot {
+  padding-top: 10px;
+  font-size: 0.82rem;
+}
+
+.stats {
+  margin-top: 24px;
+}
+
+.cover {
+  margin-top: 12px;
+}
+
+.cover-board {
+  min-height: 360px;
+  padding: 32px 24px;
+}
+
+.cover-title {
+  font-size: clamp(2rem, 3.6vw, 2.8rem);
+}
+
+.cover-page {
+  padding: clamp(20px, 2.5vw, 32px);
+  gap: 12px;
+}
+
+.cover-heading {
+  font-size: 1.3rem;
+}
+
+.cover-steps {
+  font-size: 0.98rem;
+  gap: 6px;
+}
+
+@media (min-width: 861px) and (max-height: 820px) {
+  .live-stats {
+    position: static;
+  }
+
+  .page {
+    min-height: 380px;
+  }
+
+  .book {
+    padding: 9px 9px 12px;
+  }
+
+  .page-title {
+    margin-top: 10px;
+  }
+
+  .typing-help {
+    margin-top: 7px;
+  }
+}
+
+@media (max-width: 860px) {
+  .app-header {
+    padding: 10px 12px 6px;
+  }
+
+  .app-main {
+    padding: 6px 10px 24px;
+  }
+
+  .page {
+    min-height: 0;
+    padding: 18px;
+  }
+
+  .prose {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .page-title {
+    font-size: 1.3rem;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions .btn {
+    flex: 1 1 auto;
+  }
+}

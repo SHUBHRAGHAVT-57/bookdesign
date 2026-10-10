@@ -5,10 +5,10 @@ import { importPdfAsPassages } from '../lib/pdfImport';
 import { generateAiQuestions } from '../lib/aiQuestionClient';
 import WhyItWorks from './WhyItWorks';
 
-interface OnboardingProps { onStart: (book?: { title: string; passages: Passage[] }) => void; }
+interface OnboardingProps { initialBook?: { title: string; passages: Passage[] } | null; onStart: (book?: { title: string; passages: Passage[] }) => void; }
 
-export default function Onboarding({ onStart }: OnboardingProps) {
-  const [selectedBook, setSelectedBook] = useState<{ title: string; passages: Passage[] } | null>(null);
+export default function Onboarding({ initialBook, onStart }: OnboardingProps) {
+  const [selectedBook, setSelectedBook] = useState<{ title: string; passages: Passage[] } | null>(initialBook ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [allowAi, setAllowAi] = useState(false);

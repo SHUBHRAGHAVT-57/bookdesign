@@ -92,7 +92,42 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   ].join('\n\n');
 
   try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+    // Discover models available to this exact API key/project instead of relying on
+    // a hard-coded model name that may not be enabled for the user's API project.
+    const modelListResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+      headers: { 'x-goog-api-key': apiKey },
+    });
+    if (!modelListResponse.ok) {
+      const status = modelListResponse.status;
+      const message = status === 401 || status === 403
+        ? 'Gemini did not authorize this API key. Check GEMINI_API_KEY and enable the Gemini API for its project. Local questions are still available.'
+        : status === 429
+          ? 'Gemini model discovery is rate-limited or the API quota is exhausted. Local questions are still available.'
+          : 'Could not list Gemini models for this API key (provider status ' + status + '). Local questions are still available.';
+      res.status(status === 429 ? 429 : 502).json({ error: message });
+      return;
+    }
+
+    const modelPayload: unknown = await modelListResponse.json();
+    const availableModels = isRecord(modelPayload) && Array.isArray(modelPayload.models)
+      ? modelPayload.models.filter((item): item is Record<string, unknown> =>
+          isRecord(item) &&
+          typeof item.name === 'string' &&
+          /^models\/[a-zA-Z0-9._-]+$/.test(item.name) &&
+          Array.isArray(item.supportedGenerationMethods) &&
+          item.supportedGenerationMethods.includes('generateContent'))
+      : [];
+    const flashModels = availableModels.filter((item) => /gemini.*flash/i.test(String(item.name)));
+    const preferredNames = ['models/gemini-2.5-flash', 'models/gemini-2.0-flash'];
+    const model = preferredNames
+      .map((name) => flashModels.find((item) => item.name === name))
+      .find((item) => item !== undefined) ?? flashModels[0] ?? availableModels[0];
+    if (!model || typeof model.name !== 'string') {
+      res.status(502).json({ error: 'This Gemini API key has no available model that supports question generation. Check the model access in Google AI Studio. Local questions are still available.' });
+      return;
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({
@@ -101,11 +136,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }),
     });
     if (!response.ok) {
-      res.status(response.status === 429 ? 429 : 502).json({
-        error: response.status === 429
-          ? 'The AI question service is busy or rate-limited. Try again later.'
-          : 'The AI question service could not complete this request. Local questions are still available.',
-      });
+      // Keep provider credentials and raw error payloads private, but give the user
+      // a useful next step for common configuration and quota failures.
+      const status = response.status;
+      const message = status === 400
+        ? 'Gemini rejected the request. Check the model/API configuration and try again. Local questions are still available.'
+        : status === 401 || status === 403
+          ? 'Gemini did not authorize this API key. Check that GEMINI_API_KEY is valid and enabled for the Gemini API. Local questions are still available.'
+          : status === 404
+            ? 'The configured Gemini model was not found for this API. Check the model name in the server endpoint. Local questions are still available.'
+            : status === 429
+              ? 'Gemini is rate-limited or the API quota is exhausted. Check your AI Studio quota/billing and try again later. Local questions are still available.'
+              : 'Gemini could not complete this request (provider status ' + status + '). Local questions are still available.';
+      res.status(status === 429 ? 429 : 502).json({ error: message });
       return;
     }
     const payload: unknown = await response.json();

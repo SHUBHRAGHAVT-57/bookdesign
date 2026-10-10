@@ -38,7 +38,7 @@ const TURN_MS = 1000;
 function readSavedCustomBook(): { title: string; passages: Passage[] } | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.sessionStorage.getItem('keyturn.custom-book');
+    const raw = window.localStorage.getItem('keyturn.custom-book');
     if (!raw) return null;
     const value: unknown = JSON.parse(raw);
     if (typeof value !== 'object' || value === null) return null;
@@ -264,12 +264,32 @@ export default function App() {
     setReviewIndex(null);
     setCustomBook(book ?? null);
     try {
-      if (book) window.sessionStorage.setItem('keyturn.custom-book', JSON.stringify(book));
-      else window.sessionStorage.removeItem('keyturn.custom-book');
+      if (book) window.localStorage.setItem('keyturn.custom-book', JSON.stringify(book));
+      else window.localStorage.removeItem('keyturn.custom-book');
     } catch {
       // The selected PDF still works for this session if browser storage is unavailable.
     }
     setState((s) => ({ ...createInitialState(), settings: s.settings, phase: 'typing', pageIndex: 0 }));
+  };
+
+  const saveBookAndProgress = (): void => {
+    const payload = { format: 'keyturn-save-v1', savedAt: new Date().toISOString(), book: customBook, progress: state };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    const safeTitle = (customBook?.title ?? 'keyturn-demo').replace(/[^a-z0-9-_]+/gi, '-').replace(/^-|-$/g, '');
+    anchor.href = url;
+    anchor.download = (safeTitle || 'keyturn') + '-save.json';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const openPdfSetup = (): void => {
+    clearTimers();
+    setTransition('idle');
+    setDemoTyping(false);
+    setReviewIndex(null);
+    setState((current) => ({ ...current, phase: 'onboarding' }));
   };
 
   const summary = summarizeBook(state, passages);
@@ -289,6 +309,7 @@ export default function App() {
           <p className="brand-tag">Your Personal Memory Edition</p>
         </div>
         <FlowSteps phase={phase} />
+        {showBook && <div className="header-actions">{customBook && <button type="button" className="btn" onClick={saveBookAndProgress}>Save book &amp; progress</button>}<button type="button" className="btn" onClick={openPdfSetup}>{customBook ? 'PDF / AI options' : 'Choose a PDF'}</button></div>}
         <SettingsMenu
           settings={settings}
           onChange={updateSettings}
@@ -303,7 +324,7 @@ export default function App() {
       </header>
 
       <main id="main" className="app-main" tabIndex={-1}>
-        {phase === 'onboarding' && <Onboarding onStart={startBook} />}
+        {phase === 'onboarding' && <Onboarding initialBook={customBook} onStart={startBook} />}
 
         {showBook && (
           <>
