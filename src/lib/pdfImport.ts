@@ -127,7 +127,7 @@ function splitIntoPassages(text: string): string[] {
         current = current ? `${current} ${sentence}` : sentence;
       }
       }
-      if (current && current.length > 280) {
+      if (current && (numberedItems.length > 1 || current.length > 280)) {
         chunks.push(current);
         current = '';
       }
