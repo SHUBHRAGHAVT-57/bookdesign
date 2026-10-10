@@ -185,10 +185,11 @@
 .assistant-fab {
   position: fixed; right: 22px; bottom: 22px; z-index: 80;
   width: 54px; height: 54px; border: 0; border-radius: 50%;
-  background: var(--ink, #25384b); color: #fff; font-size: 1.55rem;
+  background: var(--ink, #25384b); color: #fff; font-size: 1.55rem; padding: 0; overflow: hidden;
   box-shadow: 0 8px 28px rgba(0,0,0,.22); cursor: pointer;
 }
 .assistant-fab:hover { transform: translateY(-2px); }
+.assistant-fab img { display:block; width:100%; height:100%; object-fit:cover; border-radius:inherit; }
 .assistant-panel {
   position: fixed; z-index: 79; top: 12px; right: 12px; bottom: 88px;
   width: min(410px, calc(100vw - 24px)); display: flex; flex-direction: column;
