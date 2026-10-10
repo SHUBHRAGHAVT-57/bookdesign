@@ -28,7 +28,6 @@ import LiveStats from './components/LiveStats';
 import Onboarding from './components/Onboarding';
 import RecallModal from './components/RecallModal';
 import SettingsMenu from './components/SettingsMenu';
-import SourcePassage from './components/SourcePassage';
 import StatsPanel from './components/StatsPanel';
 import TypingPage from './components/TypingPage';
 
@@ -300,7 +299,18 @@ export default function App() {
               leafText={passage.text}
               turning={transition === 'turning'}
               complete={pageComplete}
-              source={<SourcePassage map={wordMap} currentWord={phase === 'typing' ? currentWord : -1} />}
+              source={
+                <TypingPage
+                  passageId={passage.id}
+                  target={passage.text}
+                  map={wordMap}
+                  typed={progress.typed}
+                  disabled={phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping}
+                  complete={pageComplete}
+                  ariaLabel="Type the passage on the left page"
+                  onType={handleType}
+                />
+              }
               memory={
                 <TypingPage
                   passageId={passage.id}
@@ -309,6 +319,7 @@ export default function App() {
                   typed={progress.typed}
                   disabled={phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping}
                   complete={pageComplete}
+                  ariaLabel="Type the passage on the right page"
                   onType={handleType}
                 />
               }
