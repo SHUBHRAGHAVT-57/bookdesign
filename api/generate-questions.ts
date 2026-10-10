@@ -96,7 +96,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   try {
     // Prefer OpenAI for quality; if it is unavailable or returns invalid output,
     // fall through to Gemini so existing deployments keep working.
-    if (openaiKey) {
+    if (openaiKey && process.env.ENABLE_PAID_OPENAI === 'true') {
       try {
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           signal: AbortSignal.timeout(12000),
