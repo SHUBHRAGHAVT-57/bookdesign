@@ -1,4 +1,5 @@
 import type { Passage } from '../types';
+import { generateLocalQuestions } from './questionGenerator';
 
 const PDFJS_VERSION = '4.10.38';
 const PDFJS_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.mjs`;
@@ -211,5 +212,5 @@ export async function importPdfAsPassages(file: File): Promise<{ title: string; 
     };
   });
 
-  return { title, passages };
+  return { title, passages: generateLocalQuestions(passages) };
 }
