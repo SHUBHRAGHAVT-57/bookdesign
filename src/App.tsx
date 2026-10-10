@@ -31,7 +31,7 @@ import RecallModal from './components/RecallModal';
 import SettingsMenu from './components/SettingsMenu';
 import StatsPanel from './components/StatsPanel';
 import TypingPage from './components/TypingPage';
-import AssistantPanel from './components/AssistantPanel';
+import AssistantPanel from './components/BookAssistantPanel';
 
 const SUCCESS_MS = 900;
 const TURN_MS = 1000;
