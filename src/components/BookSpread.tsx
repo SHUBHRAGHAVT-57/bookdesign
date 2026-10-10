@@ -27,9 +27,9 @@ export default function BookSpread({
   return (
     <div className="book">
     <article className={`spread${complete ? ' is-complete' : ''}`} aria-label={`${chapterLabel}: ${title}`}>
-      <section className="page page-left" aria-label={`Source passage: ${title}`}>
+      <section className="page page-left" aria-label={`Left typing practice page: ${title}`}>
         <header className="page-head">
-          <span className="page-label">Source passage</span>
+          <span className="page-label">Typing practice · Left</span>
           <span className="page-chapter">{chapterLabel}</span>
         </header>
         <h2 id="source-title" className="page-title">{title}</h2>
@@ -39,10 +39,10 @@ export default function BookSpread({
         </footer>
       </section>
 
-      <section className={`page page-right${turning ? ' is-turning' : ''}`} aria-label={`Memory Edition: ${title}`}>
+      <section className={`page page-right${turning ? ' is-turning' : ''}`} aria-label={`Right typing practice page: ${title}`}>
         <div className="page-inner">
           <header className="page-head">
-            <span className="page-label page-label-accent">Your Memory Edition</span>
+            <span className="page-label page-label-accent">Typing practice · Right</span>
             <span className="page-chapter">{chapterLabel}</span>
           </header>
           <h2 id="memory-title" className="page-title">{title}</h2>
@@ -57,7 +57,7 @@ export default function BookSpread({
           <div className="leaf" aria-hidden="true">
             <div className="leaf-face leaf-front">
               <div className="page-head">
-                <span className="page-label page-label-accent">Your Memory Edition</span>
+                <span className="page-label page-label-accent">Typing practice · Right</span>
                 <span className="page-chapter">{chapterLabel}</span>
               </div>
               <p className="page-title">{title}</p>
