@@ -1459,3 +1459,30 @@ button, input, textarea {
 .pdf-upload .field { width: 100%; min-width: 0; }
 .pdf-success { color: var(--accent); font-size: 0.9rem; font-weight: 700; }
 .pdf-upload button { margin-top: 8px; }
+
+
+.ai-question-option {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.ai-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.ai-consent input {
+  flex: 0 0 auto;
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+.ai-question-option .modal-note {
+  margin: 0;
+}
+.ai-question-option button {
+  justify-self: start;
+}
