@@ -52,9 +52,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     return;
   }
 
+  const groqKey = process.env.GROQ_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
-  if (!openaiKey && !geminiKey) {
+  if (!groqKey && !geminiKey && !(openaiKey && process.env.ENABLE_PAID_OPENAI === 'true')) {
     res.status(503).json({ error: 'AI questions are not configured yet. Local questions still work.' });
     return;
   }
@@ -92,6 +93,55 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     JSON.stringify(validPassages),
   ].join('\n\n');
 
+  let groqFailure = '';
+  try {
+    // Groq is the preferred free-tier provider. Never send requests to paid OpenAI
+    // unless the user explicitly enables it in the server environment.
+    if (groqKey) {
+      try {
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          signal: AbortSignal.timeout(15000),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + groqKey },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: 'Generate exactly one grounded study question per supplied passage. Use only facts in each passage. Return JSON with a questions array. Each item must contain id, type (comprehension, recall, or vocabulary), prompt, accepted (array of short answer variants), modelAnswer, and concept. Keep answers concise.' },
+              { role: 'user', content: prompt },
+            ],
+          }),
+        });
+        if (groqResponse.ok) {
+          const groqPayload: unknown = await groqResponse.json();
+          const choices = isRecord(groqPayload) && Array.isArray(groqPayload.choices) ? groqPayload.choices : [];
+          const choice = choices[0];
+          const message = isRecord(choice) && isRecord(choice.message) ? choice.message : null;
+          const content = message && typeof message.content === 'string' ? message.content : '';
+          if (content) {
+            const parsedGroq: unknown = JSON.parse(content);
+            const raw = isRecord(parsedGroq) ? parsedGroq.questions : null;
+            const questions = validateQuestions(raw, new Set(validPassages.map((passage) => passage.id)));
+            if (questions.length === validPassages.length) {
+              res.status(200).json({ questions, provider: 'groq' });
+              return;
+            }
+            groqFailure = 'Groq returned question data that did not pass validation.';
+          } else {
+            groqFailure = 'Groq returned an empty response.';
+          }
+        } else {
+          groqFailure = groqResponse.status === 429
+            ? 'Groq free-tier rate limit or quota reached.'
+            : groqResponse.status === 401 || groqResponse.status === 403
+              ? 'Groq did not authorize the API key. Check GROQ_API_KEY in Vercel.'
+              : 'Groq returned HTTP ' + groqResponse.status + '.';
+        }
+      } catch {
+        groqFailure = 'Groq request failed or timed out.';
+      }
+    }
   let openaiFailure = '';
   try {
     // Prefer OpenAI for quality; if it is unavailable or returns invalid output,
@@ -144,7 +194,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }
     }
     if (!geminiKey) {
-      res.status(502).json({ error: 'OpenAI could not generate valid questions. Configure GEMINI_API_KEY for fallback; local questions are still available.' });
+      res.status(502).json({ error: (groqFailure ? groqFailure + ' ' : '') + 'No free AI fallback is configured. Add GEMINI_API_KEY or use local questions, which are still available.' });
       return;
     }
     // Discover models available to this exact API key/project instead of relying on
@@ -211,7 +261,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
             : status === 429
               ? 'Gemini is rate-limited or the API quota is exhausted. Check your AI Studio quota/billing and try again later. Local questions are still available.'
               : 'Gemini could not complete this request (provider status ' + status + '). Local questions are still available.';
-      const combinedMessage = openaiFailure ? openaiFailure + ' Gemini fallback also failed: ' + message : message;
+      const combinedMessage = [groqFailure, openaiFailure, message].filter(Boolean).join(' ');
       res.status(status === 429 ? 429 : 502).json({ error: combinedMessage });
       return;
     }
