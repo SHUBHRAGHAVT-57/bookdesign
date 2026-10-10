@@ -105,7 +105,7 @@ function splitIntoPassages(text: string): string[] {
     // Numbered course notes often arrive as one PDF line. Split at item markers
     // before sentence chunking so a single practice passage does not contain a
     // whole list of unrelated topics (for example, "1. ARPANET ... 2. TCP/IP ...").
-    const numberedItems = paragraph.split(/(?=\\s+\\d{1,2}[.)]\\s+)/).map((item) => item.trim()).filter(Boolean);
+    const numberedItems = paragraph.split(/(?=\s+\d{1,2}[.)]\s+)/).map((item) => item.trim()).filter(Boolean);
     const units = numberedItems.length > 1 ? numberedItems : [paragraph];
     for (const unit of units) {
       const sentences = unit.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [unit];
