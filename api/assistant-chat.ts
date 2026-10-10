@@ -58,7 +58,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   ].join('\n\n');
   try {
     // Prefer OpenAI for tutoring quality; retain Gemini as a fallback.
-    if (openaiKey) {
+    if (openaiKey && process.env.ENABLE_PAID_OPENAI === 'true') {
       try {
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           signal: AbortSignal.timeout(15000),
