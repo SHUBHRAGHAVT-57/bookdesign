@@ -28,7 +28,6 @@ import LiveStats from './components/LiveStats';
 import Onboarding from './components/Onboarding';
 import RecallModal from './components/RecallModal';
 import SettingsMenu from './components/SettingsMenu';
-import SourcePassage from './components/SourcePassage';
 import StatsPanel from './components/StatsPanel';
 import TypingPage from './components/TypingPage';
 
@@ -47,10 +46,18 @@ export default function App() {
   const { phase, settings } = state;
   const displayIndex = reviewIndex ?? state.pageIndex;
   const passage = PASSAGES[displayIndex];
+  const leftIndex = Math.floor(displayIndex / 2) * 2;
+  const leftPassage = PASSAGES[leftIndex];
+  const rightPassage = PASSAGES[leftIndex + 1];
+  const leftProgress = state.pages[leftPassage.id] ?? createEmptyProgress();
+  const rightProgress = rightPassage ? state.pages[rightPassage.id] ?? createEmptyProgress() : createEmptyProgress();
+  const isLeftActive = displayIndex % 2 === 0;
   const isLastPage = state.pageIndex === PASSAGES.length - 1;
   const wordMap = useMemo(() => buildWordMap(passage.text), [passage.text]);
   const progress = state.pages[passage.id] ?? createEmptyProgress();
   const pageComplete = isComplete(progress.typed, passage.text);
+  const leftMap = useMemo(() => buildWordMap(leftPassage.text), [leftPassage.text]);
+  const rightMap = useMemo(() => rightPassage ? buildWordMap(rightPassage.text) : buildWordMap(''), [rightPassage?.text]);
 
   const play = (kind: SoundKind): void => playSound(kind, settings.sound);
 
@@ -69,8 +76,18 @@ export default function App() {
     play('success');
     setTransition('success');
     const finish = (): void => {
-      const target = PASSAGES.find((p) => p.id === passageId);
-      if (target) setState((s) => completePage(s, target, Date.now()));
+      const targetIndex = PASSAGES.findIndex((p) => p.id === passageId);
+      const target = PASSAGES[targetIndex];
+      if (target) {
+        if (targetIndex % 2 === 0 && targetIndex + 1 < PASSAGES.length) {
+          setState((s) => {
+            const completed = completePage(s, target, Date.now());
+            return { ...completed, phase: 'typing', pageIndex: targetIndex + 1 };
+          });
+        } else {
+          setState((s) => completePage(s, target, Date.now()));
+        }
+      }
       setTransition('idle');
       sequenceRunning.current = false;
     };
@@ -225,9 +242,6 @@ export default function App() {
   const summary = summarizeBook(state);
   const showBook = phase === 'typing' || phase === 'recall' || phase === 'echo';
   const typingActive = phase === 'typing' && transition === 'idle' && reviewIndex === null;
-  const currentWord = phase !== 'typing' || reviewIndex !== null || pageComplete
-    ? -1
-    : wordMap.charToWord[Math.min(progress.typed.length, passage.text.length - 1)];
   const demoWords = passage.concepts.filter((word) =>
     passage.text.toLowerCase().indexOf(word.toLowerCase(), progress.typed.length) >= progress.typed.length,
   );
@@ -292,25 +306,41 @@ export default function App() {
               </nav>
             )}
             <BookSpread
-              key={passage.id}
-              chapterLabel={`Chapter ${passage.chapterNumber} \u00B7 ${passage.chapterTitle}`}
-              title={passage.title}
-              leftPageNumber={displayIndex * 2 + 2}
-              rightPageNumber={displayIndex * 2 + 3}
+              key={`${leftPassage.id}-${rightPassage?.id ?? 'blank'}`}
+              leftChapterLabel={`Chapter ${leftPassage.chapterNumber} · ${leftPassage.chapterTitle}`}
+              rightChapterLabel={rightPassage ? `Chapter ${rightPassage.chapterNumber} · ${rightPassage.chapterTitle}` : 'End of book'}
+              leftTitle={leftPassage.title}
+              rightTitle={rightPassage?.title ?? 'The End'}
+              leftPageNumber={leftIndex * 2 + 2}
+              rightPageNumber={leftIndex * 2 + 3}
               leafText={passage.text}
               turning={transition === 'turning'}
               complete={pageComplete}
-              source={<SourcePassage map={wordMap} currentWord={phase === 'typing' ? currentWord : -1} />}
-              memory={
+              source={
                 <TypingPage
-                  passageId={passage.id}
-                  target={passage.text}
-                  map={wordMap}
-                  typed={progress.typed}
-                  disabled={phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping}
-                  complete={pageComplete}
+                  passageId={leftPassage.id}
+                  target={leftPassage.text}
+                  map={leftMap}
+                  typed={leftProgress.typed}
+                  disabled={phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping || !isLeftActive}
+                  complete={isComplete(leftProgress.typed, leftPassage.text)}
+                  ariaLabel="Type the passage on the left page"
                   onType={handleType}
                 />
+              }
+              memory={
+                rightPassage ? (
+                  <TypingPage
+                    passageId={rightPassage.id}
+                    target={rightPassage.text}
+                    map={rightMap}
+                    typed={rightProgress.typed}
+                    disabled={phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping || isLeftActive}
+                    complete={isComplete(rightProgress.typed, rightPassage.text)}
+                    ariaLabel="Type the passage on the right page"
+                    onType={handleType}
+                  />
+                ) : <p className="prose">You have reached the end of Small Wonders.</p>
               }
             />
             <StatsPanel book={summary} totalPages={PASSAGES.length} />
