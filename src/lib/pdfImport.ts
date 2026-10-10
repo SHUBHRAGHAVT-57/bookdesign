@@ -49,7 +49,19 @@ function groupItemsIntoLines(items: PdfTextItem[]): PdfLine[] {
 }
 
 function cleanExtracted(text: string): string {
-  return text.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').trim();
+  return text
+    // Remove decorative list markers and glyphs that are not practical to type.
+    .replace(/[•●▪◦‣⁃◆◇■□★☆▶►➤➢]/g, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, '-')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/([,.;:!?])(?=\S)/g, '$1 ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 function linesToParagraphs(lines: PdfLine[]): string[] {
