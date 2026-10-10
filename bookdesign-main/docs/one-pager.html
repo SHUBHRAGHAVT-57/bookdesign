@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KeyTurn: Your Personal Memory Edition (one-pager)</title>
+<style>
+  :root { --paper:#fbf4e2; --ink:#241d16; --muted:#5c5142; --green:#234637; --accent:#2f5f4a; --gilt:#a98a4a; --line:#cdbf9f; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#2a2118; color:var(--ink); font-family: system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif; line-height:1.5; }
+  main { max-width:1100px; margin:24px auto; background:var(--paper); border-top:10px solid var(--green); border-radius:6px; padding:32px 40px 28px; }
+  h1,h2 { font-family: 'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif; margin:0; }
+  h1 { font-size:2.2rem; line-height:1.1; }
+  .tag { color:var(--muted); margin:4px 0 18px; font-size:1.05rem; }
+  h2 { font-size:1.1rem; margin-bottom:6px; padding-bottom:4px; border-bottom:2px solid var(--gilt); }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  .span2 { grid-column: span 2; }
+  p, li { font-size:0.93rem; margin:0 0 6px; }
+  ul { margin:0; padding-left:18px; }
+  .flow { display:flex; align-items:center; gap:6px; margin:6px 0 20px; flex-wrap:wrap; }
+  .step { border:2px solid var(--green); border-radius:8px; padding:8px 14px; font-weight:700; background:#fffdf6; }
+  .step small { display:block; font-weight:400; color:var(--muted); font-size:0.75rem; }
+  .arrow { font-weight:700; color:var(--gilt); font-size:1.3rem; }
+  .note { margin-top:18px; padding:10px 14px; border:1.5px solid var(--green); border-radius:6px; background:#fffdf6; font-size:0.88rem; }
+  .foot { margin-top:14px; color:var(--muted); font-size:0.8rem; }
+  @media (max-width:800px) { .grid { grid-template-columns:1fr; } .span2 { grid-column:auto; } main { padding:22px 18px; } }
+  @media print { body { background:#fff; } main { margin:0; max-width:none; border-radius:0; } @page { size:A4 landscape; margin:10mm; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>KeyTurn: Your Personal Memory Edition</h1>
+  <p class="tag">Read it. Type it. Recall it. Review what tripped you. Remember it.</p>
+
+  <div class="flow" role="img" aria-label="Read, Type, Recall, Review, Remember">
+    <div class="step">Read<small>source page</small></div><span class="arrow">&rarr;</span>
+    <div class="step">Type<small>into your own book</small></div><span class="arrow">&rarr;</span>
+    <div class="step">Recall<small>one question</small></div><span class="arrow">&rarr;</span>
+    <div class="step">Review<small>Echo on weak words</small></div><span class="arrow">&rarr;</span>
+    <div class="step">Remember<small>words return, measured</small></div>
+  </div>
+
+  <div class="grid">
+    <section>
+      <h2>The problem</h2>
+      <p>People read, nod and forget. Re-reading and highlighting feel productive but are weak study techniques. Typing tools build speed on random text and never check understanding.</p>
+      <p><em>Evidence level: established in the research literature, details to verify (see IMPACT.md).</em></p>
+    </section>
+    <section>
+      <h2>The solution</h2>
+      <p>A digital book you write yourself. Correct letters turn from faint text into permanent ink. A recall question checks understanding. <strong>Echo Review</strong> brings back the exact words you struggled with, then returns them later to see if they stuck.</p>
+    </section>
+    <section>
+      <h2>Why it is different</h2>
+      <ul>
+        <li>Starts from the reading, not flashcards you must write</li>
+        <li>Typing skill and understanding are scored <strong>separately</strong></li>
+        <li>Transparent rules, no black box, no AI claims</li>
+        <li>Fully offline; data never leaves the device</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Who it helps</h2>
+      <ul>
+        <li>Students revising dense material</li>
+        <li>Language and vocabulary learners</li>
+        <li>Professionals studying technical text</li>
+        <li>Anyone who struggles to hold on to passive reading</li>
+      </ul>
+      <p>No medical or therapeutic claims.</p>
+    </section>
+    <section class="span2">
+      <h2>Impact: hypotheses we can measure</h2>
+      <ul>
+        <li><strong>Retention:</strong> better delayed recall than re-reading the same material.</li>
+        <li><strong>Echo works:</strong> weak words come back and are remembered on the first try more often than not.</li>
+        <li><strong>Engagement:</strong> learners finish more of a passage set.</li>
+        <li><strong>Honest reporting:</strong> fast, accurate typing never claims understanding.</li>
+      </ul>
+      <p>Pilot plan: within-subject, two comparable passage sets, delayed quiz after 2-7 days (see IMPACT.md).</p>
+    </section>
+    <section>
+      <h2>What exists today</h2>
+      <ul>
+        <li>Working offline app and tests</li>
+        <li>Memory Report with an Echo effect line</li>
+        <li>Page history, copy summary</li>
+        <li>Presenter Demo assist</li>
+      </ul>
+    </section>
+    <section class="span2">
+      <h2>Roadmap</h2>
+      <ul>
+        <li><strong>Next:</strong> import your own text on-device; cross-session spaced review; CSV export; accessibility themes; language packs.</li>
+        <li><strong>Later:</strong> teacher mode (opt-in, privacy first); optional human-reviewed question drafting; a real pilot study.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Known limitations</h2>
+      <ul>
+        <li>Transcription can be shallow; recall and Echo counter it, untested at scale</li>
+        <li>Keyword-based recall grading</li>
+        <li>Six English demo passages</li>
+      </ul>
+    </section>
+  </div>
+
+  <p class="note"><strong>Prototype status:</strong> impact is a hypothesis to test, not a result. No statistics are claimed here.</p>
+  <p class="foot">KeyTurn &middot; React + TypeScript &middot; works offline &middot; see docs/PITCH.md, IMPACT.md, ROADMAP.md</p>
+</main>
+</body>
+</html>
