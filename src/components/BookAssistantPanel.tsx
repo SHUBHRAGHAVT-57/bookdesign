@@ -78,15 +78,15 @@ export default function AssistantPanel({ bookTitle, passage, pageNumber, onClose
   };
 
   return (
-    <aside className="assistant-panel" aria-label="KeyTurn AI assistant">
+    <aside className="assistant-panel" aria-label="Rakhu AI assistant">
       <header className="assistant-panel-head">
-        <div><span className="assistant-eyebrow">KEYTURN STUDY COMPANION</span><h2>Friendly tutor ✦</h2><p>Chapter {passage.chapterNumber} · {passage.title}</p></div>
+        <div><span className="assistant-eyebrow">RAKHU · KEYTURN STUDY COMPANION</span><h2>Rakhu ✦</h2><p>Chapter {passage.chapterNumber} · {passage.title}</p></div>
         <button type="button" className="assistant-close" onClick={onClose} aria-label="Close assistant">×</button>
       </header>
       <div className="assistant-context"><strong>Reading context</strong><span>{bookTitle} · page {pageNumber}</span><small>Book + AI knowledge · chat pauses typing</small></div>
       <div className="assistant-messages" aria-live="polite">
         {messages.length === 0 && <div className="assistant-welcome"><span>✦</span><h3>What would you like to understand?</h3><p>I can explain this passage, define a word, summarise the idea, or quiz you on what you read.</p></div>}
-        {messages.map((message, index) => <div key={index} className={`assistant-message ${message.role}`}><span>{message.role === 'user' ? 'You' : 'KeyTurn'}</span><p>{message.content}</p></div>)}
+        {messages.map((message, index) => <div key={index} className={`assistant-message ${message.role}`}><span>{message.role === 'user' ? 'You' : 'Rakhu'}</span><p>{message.content}</p></div>)}
         {busy && <div className="assistant-typing" role="status">Thinking through your question…</div>}
       </div>
       {error && <p className="assistant-error" role="alert">{error}</p>}
