@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PASSAGES } from './data/bookData';
+import type { Passage } from './types';
 import {
   STATE_VERSION,
   STORAGE_KEY,
@@ -36,6 +37,8 @@ const TURN_MS = 1000;
 
 export default function App() {
   const [state, setState] = useLocalStorage<AppState>(STORAGE_KEY, STATE_VERSION, createInitialState, isAppState);
+  const [customBook, setCustomBook] = useState<{ title: string; passages: Passage[] } | null>(null);
+  const passages = customBook?.passages ?? PASSAGES;
   const [transition, setTransition] = useState<Transition>('idle');
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
@@ -45,14 +48,14 @@ export default function App() {
 
   const { phase, settings } = state;
   const displayIndex = reviewIndex ?? state.pageIndex;
-  const passage = PASSAGES[displayIndex];
+  const passage = passages[displayIndex];
   const leftIndex = Math.floor(displayIndex / 2) * 2;
-  const leftPassage = PASSAGES[leftIndex];
-  const rightPassage = PASSAGES[leftIndex + 1];
+  const leftPassage = passages[leftIndex];
+  const rightPassage = passages[leftIndex + 1];
   const leftProgress = state.pages[leftPassage.id] ?? createEmptyProgress();
   const rightProgress = rightPassage ? state.pages[rightPassage.id] ?? createEmptyProgress() : createEmptyProgress();
   const isLeftActive = displayIndex % 2 === 0;
-  const isLastPage = state.pageIndex === PASSAGES.length - 1;
+  const isLastPage = state.pageIndex === passages.length - 1;
   const wordMap = useMemo(() => buildWordMap(passage.text), [passage.text]);
   const progress = state.pages[passage.id] ?? createEmptyProgress();
   const pageComplete = isComplete(progress.typed, passage.text);
@@ -76,12 +79,12 @@ export default function App() {
     play('success');
     setTransition('success');
     const finish = (): void => {
-      const targetIndex = PASSAGES.findIndex((p) => p.id === passageId);
+      const targetIndex = passages.findIndex((p) => p.id === passageId);
       const target = PASSAGES[targetIndex];
       if (target) {
-        if (targetIndex % 2 === 0 && targetIndex + 1 < PASSAGES.length) {
+        if (targetIndex % 2 === 0 && targetIndex + 1 < passages.length) {
           setState((s) => {
-            const completed = completePage(s, target, Date.now());
+            const completed = completePage(s, target, Date.now(), passages);
             return { ...completed, phase: 'typing', pageIndex: targetIndex + 1 };
           });
         } else {
@@ -113,7 +116,7 @@ export default function App() {
 
   const handleRecallContinue = (): void => {
     if (progress.echo) {
-      setState((s) => continueAfterRecall(s, passage));
+      setState((s) => continueAfterRecall(s, passage, passages));
       return;
     }
     if (settings.reducedMotion) {
@@ -122,7 +125,7 @@ export default function App() {
     }
     setState((s) => ({ ...s, phase: 'typing' }));
     turnToNextPage(() => {
-      setState((s) => continueAfterRecall({ ...s, phase: 'recall' }, passage));
+      setState((s) => continueAfterRecall({ ...s, phase: 'recall' }, passage, passages));
     });
   };
 
@@ -152,12 +155,12 @@ export default function App() {
   const handleEchoDone = (result: EchoResult): void => {
     if (result.solved) play('chime');
     if (settings.reducedMotion) {
-      setState((s) => recordEcho(s, passage, result));
+      setState((s) => recordEcho(s, passage, result, passages));
       return;
     }
     setState((s) => ({ ...s, phase: 'typing' }));
     turnToNextPage(() => {
-      setState((s) => recordEcho({ ...s, phase: 'echo' }, passage, result));
+      setState((s) => recordEcho({ ...s, phase: 'echo' }, passage, result, passages));
     });
   };
 
@@ -234,12 +237,13 @@ export default function App() {
     setState((s) => resetProgress(s));
   };
 
-  const startBook = (): void => {
+  const startBook = (book?: { title: string; passages: Passage[] }): void => {
     setReviewIndex(null);
-    setState((s) => ({ ...s, phase: 'typing', pageIndex: 0 }));
+    setCustomBook(book ?? null);
+    setState((s) => ({ ...createInitialState(), settings: s.settings, phase: 'typing', pageIndex: 0 }));
   };
 
-  const summary = summarizeBook(state);
+  const summary = summarizeBook(state, passages);
   const showBook = phase === 'typing' || phase === 'recall' || phase === 'echo';
   const typingActive = phase === 'typing' && transition === 'idle' && reviewIndex === null;
   const demoWords = passage.concepts.filter((word) =>
@@ -252,7 +256,7 @@ export default function App() {
 
       <header className="app-header">
         <div className="brand">
-          <h1 className="brand-name">KeyTurn</h1>
+          <h1 className="brand-name">KeyTurn</h1>{customBook && <p className="brand-tag">Practising: {customBook.title}</p>}
           <p className="brand-tag">Your Personal Memory Edition</p>
         </div>
         <FlowSteps phase={phase} />
@@ -261,7 +265,7 @@ export default function App() {
           onChange={updateSettings}
           onReset={() => setConfirmingReset(true)}
           pageIndex={state.pageIndex}
-          pageCount={PASSAGES.length}
+          pageCount={passages.length}
           demoWords={demoWords}
           demoTyping={demoTyping}
           onDemoJump={jumpToDemoPage}
@@ -277,7 +281,7 @@ export default function App() {
             <LiveStats
               page={summarizePage(progress, passage.text)}
               pageNumber={displayIndex + 1}
-              totalPages={PASSAGES.length}
+              totalPages={passages.length}
               lastKeyAt={progress.metrics.lastKeyAt}
               typingActive={typingActive}
             />
@@ -285,7 +289,7 @@ export default function App() {
               <nav className="page-history" aria-label="Completed pages">
                 <span>Look back through your ink:</span>
                 {state.completed.map((id) => {
-                  const index = PASSAGES.findIndex((item) => item.id === id);
+                  const index = passages.findIndex((item) => item.id === id);
                   return (
                     <button
                       type="button"
