@@ -29,7 +29,7 @@ export default function RecallModal({ passage, result, echoPlan, isLast, onSubmi
 
   return (
     <Modal labelledBy="recall-title" describedBy="recall-prompt">
-      <p className="modal-kicker">Recall · {passage.title}</p>
+      <p className="modal-kicker">{passage.question.type ? `${passage.question.type[0].toUpperCase()}${passage.question.type.slice(1)}` : "Recall"} · {passage.title}</p>
       <h2 id="recall-title" className="modal-title">Quick recall</h2>
       <p id="recall-prompt" className="recall-prompt">{passage.question.prompt}</p>
 

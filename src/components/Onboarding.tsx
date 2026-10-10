@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Passage } from '../types';
 import { BOOK } from '../data/bookData';
 import { importPdfAsPassages } from '../lib/pdfImport';
+import { generateAiQuestions } from '../lib/aiQuestionClient';
 import WhyItWorks from './WhyItWorks';
 
 interface OnboardingProps { onStart: (book?: { title: string; passages: Passage[] }) => void; }
@@ -10,13 +11,28 @@ export default function Onboarding({ onStart }: OnboardingProps) {
   const [selectedBook, setSelectedBook] = useState<{ title: string; passages: Passage[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [allowAi, setAllowAi] = useState(false);
 
   const handleFile = async (file?: File): Promise<void> => {
     if (!file) return;
-    setBusy(true); setError(''); setSelectedBook(null);
+    setBusy(true); setError(''); setSelectedBook(null); setAllowAi(false);
     try { setSelectedBook(await importPdfAsPassages(file)); }
     catch (err) { setError(err instanceof Error ? err.message : 'Could not read this PDF.'); }
     finally { setBusy(false); }
+  };
+
+  const enhanceQuestions = async (): Promise<void> => {
+    if (!selectedBook || !allowAi || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const passages = await generateAiQuestions(selectedBook.passages);
+      setSelectedBook({ ...selectedBook, passages });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI question generation failed. Local questions are still available.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -36,8 +52,20 @@ export default function Onboarding({ onStart }: OnboardingProps) {
             onChange={(event) => void handleFile(event.currentTarget.files?.[0])} />
           {busy && <p className="modal-note" role="status">Reading PDF and preparing passages…</p>}
           {error && <p className="field-error" role="alert">{error}</p>}
-          {selectedBook && <p className="pdf-success" role="status">Ready: {selectedBook.passages.length} passages. Start when you’re ready.</p>}
-          {selectedBook && <button type="button" className="btn" onClick={() => { setSelectedBook(null); setError(''); }}>Remove PDF</button>}
+          {selectedBook && <p className="pdf-success" role="status">Ready: {selectedBook.passages.length} passages with local questions. Start when you’re ready.</p>}
+          {selectedBook && (
+            <div className="ai-question-option">
+              <label className="ai-consent">
+                <input type="checkbox" checked={allowAi} onChange={(event) => setAllowAi(event.currentTarget.checked)} disabled={busy} />
+                <span>I agree to send extracted passage text to Google Gemini to improve the questions.</span>
+              </label>
+              <p className="modal-note">Optional: only extracted passages are sent, not the PDF file. This uses an external AI service and may incur service costs. If you leave this unchecked, local questions remain available.</p>
+              <button type="button" className="btn" onClick={() => void enhanceQuestions()} disabled={!allowAi || busy}>
+                {busy ? 'Generating questions…' : 'Improve questions with AI'}
+              </button>
+            </div>
+          )}
+          {selectedBook && <button type="button" className="btn" onClick={() => { setSelectedBook(null); setError(''); setAllowAi(false); }}>Remove PDF</button>}
         </div>
         <h3 className="cover-heading">How practice works</h3>
         <ol className="cover-steps">
