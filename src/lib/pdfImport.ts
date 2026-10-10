@@ -38,9 +38,9 @@ function groupItemsIntoLines(items: PdfTextItem[]): PdfLine[] {
     }
 
     const needsSpace = current.text.length > 0 &&
-      !/\\s$/.test(current.text) &&
+      !/\s$/.test(current.text) &&
       text.length > 0 &&
-      !/^\\s/.test(text);
+      !/^\s/.test(text);
     current.text += (needsSpace ? ' ' : '') + text;
   }
 
@@ -48,7 +48,7 @@ function groupItemsIntoLines(items: PdfTextItem[]): PdfLine[] {
 }
 
 function cleanExtracted(text: string): string {
-  return text.replace(/\\s+/g, ' ').replace(/\\s+([,.;:!?])/g, '$1').trim();
+  return text.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').trim();
 }
 
 function linesToParagraphs(lines: PdfLine[]): string[] {
@@ -84,7 +84,7 @@ function linesToParagraphs(lines: PdfLine[]): string[] {
 }
 
 function splitIntoPassages(text: string): string[] {
-  const paragraphs = text.split(/\\n{2,}/).map(cleanExtracted).filter(Boolean);
+  const paragraphs = text.split(/\n{2,}/).map(cleanExtracted).filter(Boolean);
   const chunks: string[] = [];
   let current = '';
 
@@ -184,7 +184,7 @@ export async function importPdfAsPassages(file: File): Promise<{ title: string; 
   const chunks = splitIntoPassages(extractedParagraphs.join('\n\n'));
   if (!chunks.length) throw new Error('I could not find enough readable text in this PDF.');
 
-  const filenameTitle = file.name.replace(/\\.pdf$/i, '').trim();
+  const filenameTitle = file.name.replace(/\.pdf$/i, '').trim();
   const title = metadata.info?.Title?.trim() || filenameTitle || 'My PDF';
   const passages: Passage[] = chunks.map((chunk, index) => {
     const words = chunk.toLowerCase().match(/[a-z][a-z'-]{3,}/g) ?? [];
@@ -193,7 +193,7 @@ export async function importPdfAsPassages(file: File): Promise<{ title: string; 
     const concept = [...counts.keys()].sort(
       (a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0) || b.length - a.length,
     )[0] ?? 'passage';
-    const titleWords = chunk.split(/\\s+/).slice(0, 6).join(' ');
+    const titleWords = chunk.split(/\s+/).slice(0, 6).join(' ');
 
     return {
       id: `pdf-${index + 1}`,
