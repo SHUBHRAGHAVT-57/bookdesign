@@ -152,8 +152,8 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
           : wrong > 0
             ? `${wrong} ${wrong === 1 ? 'mistake' : 'mistakes'} marked with a wavy underline. Press Backspace to fix.`
             : focused
-              ? 'Type on either page. Your progress stays in sync across both sides; Backspace fixes mistakes.'
-              : 'Click or tap either page to start typing. Both pages share the same progress; pasting is disabled.'}
+              ? 'Each page has its own passage. Finish this page to continue to the next; Backspace fixes mistakes.'
+              : 'Click or tap the active page to type its passage. The two pages have different text; pasting is disabled.'}
       </p>
       <p className="visually-hidden" role="status" aria-live="polite">
         {statusText}
