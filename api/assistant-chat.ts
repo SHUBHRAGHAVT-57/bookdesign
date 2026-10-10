@@ -32,8 +32,9 @@ function validateMessages(value: unknown): ChatMessage[] | null {
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); res.status(405).json({ error: 'Use POST to chat with the assistant.' }); return; }
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) { res.status(503).json({ error: 'The AI assistant is not configured yet. Add GEMINI_API_KEY in Vercel project environment variables.' }); return; }
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey && !geminiKey) { res.status(503).json({ error: 'The AI assistant is not configured yet. Add OPENAI_API_KEY or GEMINI_API_KEY in Vercel project environment variables.' }); return; }
   const body = parseBody(req.body) as RequestBody | null;
   const context = body?.context;
   const bookTitle = cleanText(body?.bookTitle, 160);
@@ -56,7 +57,43 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     'Current passage text:\n' + passageText,
   ].join('\n\n');
   try {
-    const listResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': apiKey } });
+    // Prefer OpenAI for tutoring quality; retain Gemini as a fallback.
+    if (openaiKey) {
+      try {
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          signal: AbortSignal.timeout(15000),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + openaiKey },
+          body: JSON.stringify({
+            model: 'gpt-4.1-mini',
+            temperature: 0.55,
+            max_tokens: 700,
+            messages: [
+              { role: 'system', content: systemInstruction },
+              ...messages.map((message) => ({ role: message.role, content: message.content })),
+            ],
+          }),
+        });
+        if (openaiResponse.ok) {
+          const openaiPayload: unknown = await openaiResponse.json();
+          const choices = isRecord(openaiPayload) && Array.isArray(openaiPayload.choices) ? openaiPayload.choices : [];
+          const choice = choices[0];
+          const message = isRecord(choice) && isRecord(choice.message) ? choice.message : null;
+          const reply = message && typeof message.content === 'string' ? message.content.trim() : '';
+          if (reply) {
+            res.status(200).json({ reply: reply.slice(0, 5000), provider: 'openai' });
+            return;
+          }
+        }
+      } catch {
+        // Continue to Gemini fallback on timeout or provider errors.
+      }
+    }
+    if (!geminiKey) {
+      res.status(502).json({ error: 'OpenAI could not answer. Configure GEMINI_API_KEY to enable the Gemini fallback.' });
+      return;
+    }
+    const listResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': geminiKey } });
     if (!listResponse.ok) {
       res.status(502).json({ error: 'Gemini could not list available models. Check the server-side API key and Gemini API access.' }); return;
     }
@@ -80,7 +117,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       const modelId = String(model.name).replace(/^models\//, '');
       const attempt = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelId) + ':generateContent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemInstruction }] },
           contents,
