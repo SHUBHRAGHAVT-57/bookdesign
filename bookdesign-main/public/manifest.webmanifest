@@ -1,0 +1,12 @@
+{
+  "name": "KeyTurn: Your Personal Memory Edition",
+  "short_name": "KeyTurn",
+  "description": "Read, type, recall, review, and remember with your own Memory Edition.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ddd4c0",
+  "theme_color": "#2f5f4a",
+  "icons": [
+    { "src": "./keyturn.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
