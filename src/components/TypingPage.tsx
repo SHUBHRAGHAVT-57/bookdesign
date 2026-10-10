@@ -89,6 +89,7 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
   }, []);
 
   const wrong = countWrong(typed, target);
+  const helpId = ariaLabel.includes('left page') ? 'typing-help-left' : 'typing-help-right';
 
   const onChange = (event: ChangeEvent<HTMLTextAreaElement>): void => onType(event.target.value);
   const block = (event: ClipboardEvent<HTMLTextAreaElement> | DragEvent<HTMLTextAreaElement>): void =>
@@ -138,21 +139,21 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
           }}
           onBlur={() => setFocused(false)}
           aria-label={ariaLabel}
-          aria-describedby="typing-help"
+          aria-describedby={helpId}
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
         />
       </div>
-      <p id="typing-help" className="typing-help">
+      <p id={helpId} className="typing-help">
         {complete
           ? 'Page complete. Every line is now ink.'
           : wrong > 0
             ? `${wrong} ${wrong === 1 ? 'mistake' : 'mistakes'} marked with a wavy underline. Press Backspace to fix.`
             : focused
-              ? 'Type what you read on the left. Correct letters turn into ink; Backspace fixes mistakes.'
-              : 'Click or tap this page to start typing. Pasting is disabled.'}
+              ? 'Type on either page. Your progress stays in sync across both sides; Backspace fixes mistakes.'
+              : 'Click or tap either page to start typing. Both pages share the same progress; pasting is disabled.'}
       </p>
       <p className="visually-hidden" role="status" aria-live="polite">
         {statusText}
