@@ -61,18 +61,18 @@ function isProgress(value: unknown): boolean {
 }
 
 /** Defensive check so a stale or hand-edited save can never crash the app. */
-export function isAppState(value: unknown): value is AppState {
+export function isAppState(value: unknown, passages: Passage[] = PASSAGES): value is AppState {
   if (!isRecord(value)) return false;
   if (typeof value.phase !== 'string' || !PHASES.includes(value.phase as Phase)) return false;
   if (!isNumber(value.pageIndex) || !Number.isInteger(value.pageIndex)) return false;
-  if (value.pageIndex < 0 || value.pageIndex >= PASSAGES.length) return false;
+  if (value.pageIndex < 0 || value.pageIndex >= passages.length) return false;
   if (!isRecord(value.pages) || !Array.isArray(value.completed)) return false;
   if (!isRecord(value.recall) || !isRecord(value.echo) || !isRecord(value.weakWords)) return false;
   if (!isRecord(value.settings)) return false;
   if (typeof value.settings.sound !== 'boolean' || typeof value.settings.reducedMotion !== 'boolean') return false;
   if (!Object.values(value.pages).every(isProgress)) return false;
 
-  const passage = PASSAGES[value.pageIndex];
+  const passage = passages[value.pageIndex];
   const page = value.pages[passage.id] as { typed?: string; echo?: unknown } | undefined;
   if ((value.phase === 'recall' || value.phase === 'echo') && page?.typed !== passage.text) return false;
   if (value.phase === 'echo' && !page?.echo) return false;
