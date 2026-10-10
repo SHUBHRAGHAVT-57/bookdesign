@@ -117,34 +117,41 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
           Array.isArray(item.supportedGenerationMethods) &&
           item.supportedGenerationMethods.includes('generateContent'))
       : [];
-    const flashModels = availableModels.filter((item) => /gemini.*flash/i.test(String(item.name)));
-    const preferredNames = ['models/gemini-2.5-flash', 'models/gemini-2.0-flash'];
-    const model = preferredNames
-      .map((name) => flashModels.find((item) => item.name === name))
-      .find((item) => item !== undefined) ?? flashModels[0] ?? availableModels[0];
-    if (!model || typeof model.name !== 'string') {
-      res.status(502).json({ error: 'This Gemini API key has no available model that supports question generation. Check the model access in Google AI Studio. Local questions are still available.' });
+    // Select only text-capable Gemini Flash models; never fall back to embeddings or media models.
+    const flashModels = availableModels.filter((item) => /^models\/gemini-[a-z0-9.-]*flash[a-z0-9.-]*$/i.test(String(item.name)));
+    const preferredNames = ['models/gemini-2.5-flash', 'models/gemini-3.5-flash', 'models/gemini-3.6-flash', 'models/gemini-3.8-flash', 'models/gemini-2.5-flash-lite'];
+    const candidates = [
+      ...preferredNames.map((name) => flashModels.find((item) => item.name === name)).filter((item): item is Record<string, unknown> => !!item),
+      ...flashModels.filter((item) => !preferredNames.includes(String(item.name))),
+    ];
+    if (!candidates.length) {
+      res.status(502).json({ error: 'This Gemini API key has no available Flash text model. Check Gemini API access in Google AI Studio. Local questions are still available.' });
       return;
     }
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-      }),
-    });
-    if (!response.ok) {
+    let response: Response | null = null;
+    for (const model of candidates) {
+      const modelId = String(model.name).replace(/^models\//, '');
+      const attempt = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+        }),
+      });
+      response = attempt;
+      if (attempt.ok || (attempt.status !== 404 && attempt.status !== 400)) break;
+    }
+    if (!response || !response.ok) {
       // Keep provider credentials and raw error payloads private, but give the user
       // a useful next step for common configuration and quota failures.
       const status = response.status;
       const message = status === 400
-        ? 'Gemini rejected the request. Check the model/API configuration and try again. Local questions are still available.'
+        ? 'Gemini rejected the request for every available Flash model. Check Gemini API access and model availability. Local questions are still available.'
         : status === 401 || status === 403
           ? 'Gemini did not authorize this API key. Check that GEMINI_API_KEY is valid and enabled for the Gemini API. Local questions are still available.'
           : status === 404
-            ? 'The configured Gemini model was not found for this API. Check the model name in the server endpoint. Local questions are still available.'
+            ? 'None of the available Flash models accepted this request. Check Gemini API access for this key. Local questions are still available.'
             : status === 429
               ? 'Gemini is rate-limited or the API quota is exhausted. Check your AI Studio quota/billing and try again later. Local questions are still available.'
               : 'Gemini could not complete this request (provider status ' + status + '). Local questions are still available.';
