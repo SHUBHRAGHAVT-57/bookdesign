@@ -52,8 +52,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey && !geminiKey) {
     res.status(503).json({ error: 'AI questions are not configured yet. Local questions still work.' });
     return;
   }
@@ -92,10 +93,52 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   ].join('\n\n');
 
   try {
+    // Prefer OpenAI for quality; if it is unavailable or returns invalid output,
+    // fall through to Gemini so existing deployments keep working.
+    if (openaiKey) {
+      try {
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          signal: AbortSignal.timeout(12000),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + openaiKey },
+          body: JSON.stringify({
+            model: 'gpt-4.1-mini',
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: 'Generate exactly one grounded study question per supplied passage. Use only facts in each passage. Return JSON with a questions array. Each item must contain id, type (comprehension, recall, or vocabulary), prompt, accepted (array of short answer variants), modelAnswer, and concept. Keep answers concise.' },
+              { role: 'user', content: prompt },
+            ],
+          }),
+        });
+        if (openaiResponse.ok) {
+          const openaiPayload: unknown = await openaiResponse.json();
+          const choices = isRecord(openaiPayload) && Array.isArray(openaiPayload.choices) ? openaiPayload.choices : [];
+          const choice = choices[0];
+          const message = isRecord(choice) && isRecord(choice.message) ? choice.message : null;
+          const content = message && typeof message.content === 'string' ? message.content : '';
+          if (content) {
+            const parsedOpenAI: unknown = JSON.parse(content);
+            const raw = isRecord(parsedOpenAI) ? parsedOpenAI.questions : null;
+            const questions = validateQuestions(raw, new Set(validPassages.map((passage) => passage.id)));
+            if (questions.length === validPassages.length) {
+              res.status(200).json({ questions, provider: 'openai' });
+              return;
+            }
+          }
+        }
+      } catch {
+        // Continue to Gemini fallback on timeout, provider errors, or invalid output.
+      }
+    }
+    if (!geminiKey) {
+      res.status(502).json({ error: 'OpenAI could not generate valid questions. Configure GEMINI_API_KEY for fallback; local questions are still available.' });
+      return;
+    }
     // Discover models available to this exact API key/project instead of relying on
     // a hard-coded model name that may not be enabled for the user's API project.
     const modelListResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
-      headers: { 'x-goog-api-key': apiKey },
+      headers: { 'x-goog-api-key': geminiKey },
     });
     if (!modelListResponse.ok) {
       const status = modelListResponse.status;
@@ -134,7 +177,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       const attempt = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`, {
         signal: AbortSignal.timeout(12000),
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
