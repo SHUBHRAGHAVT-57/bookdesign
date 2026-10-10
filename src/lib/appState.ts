@@ -79,14 +79,14 @@ export function isAppState(value: unknown): value is AppState {
   return true;
 }
 
-function advance(state: AppState): AppState {
+function advance(state: AppState, passages: Passage[] = PASSAGES): AppState {
   const next = state.pageIndex + 1;
-  if (next < PASSAGES.length) return { ...state, phase: 'typing', pageIndex: next };
+  if (next < passages.length) return { ...state, phase: 'typing', pageIndex: next };
   return { ...state, phase: 'finished' };
 }
 
 /** Typing finished: lock the page, find the weak word, remember struggles. */
-export function completePage(state: AppState, passage: Passage, now: number): AppState {
+export function completePage(state: AppState, passage: Passage, now: number, passages: Passage[] = PASSAGES): AppState {
   if (state.phase !== 'typing') return state;
   const progress = state.pages[passage.id];
   if (!progress || progress.typed !== passage.text) return state;
@@ -127,12 +127,12 @@ export function recordRecall(state: AppState, passage: Passage, answer: string, 
   };
 }
 
-export function continueAfterRecall(state: AppState, passage: Passage): AppState {
+export function continueAfterRecall(state: AppState, passage: Passage, passages: Passage[] = PASSAGES): AppState {
   if (state.phase !== 'recall' || !state.recall[passage.id]) return state;
-  return state.pages[passage.id]?.echo ? { ...state, phase: 'echo' } : advance(state);
+  return state.pages[passage.id]?.echo ? { ...state, phase: 'echo' } : advance(state, passages);
 }
 
-export function recordEcho(state: AppState, passage: Passage, result: EchoResult): AppState {
+export function recordEcho(state: AppState, passage: Passage, result: EchoResult, passages: Passage[] = PASSAGES): AppState {
   if (state.phase !== 'echo') return state;
   const prev = state.weakWords[result.word];
   const weakWords = {
@@ -143,7 +143,7 @@ export function recordEcho(state: AppState, passage: Passage, result: EchoResult
       reviewed: result.solved || (prev?.reviewed ?? false),
     },
   };
-  return advance({ ...state, echo: { ...state.echo, [passage.id]: result }, weakWords });
+  return advance({ ...state, echo: { ...state.echo, [passage.id]: result }, weakWords }, passages);
 }
 
 /** Records the final Memory Round. A first-try return retires a word; otherwise it stays shaky. */
@@ -163,13 +163,13 @@ export function recordEchoReturn(state: AppState, word: string, solved: boolean)
   };
 }
 
-export function summarizeBook(state: AppState): BookSummary {
+export function summarizeBook(state: AppState, passages: Passage[] = PASSAGES): BookSummary {
   let correctChars = 0;
   let activeMs = 0;
   let correctKeys = 0;
   let totalKeys = 0;
   let mistakes = 0;
-  for (const passage of PASSAGES) {
+  for (const passage of passages) {
     const progress = state.pages[passage.id] ?? createEmptyProgress();
     correctChars += countCorrect(progress.typed, passage.text);
     activeMs += progress.metrics.activeMs;
