@@ -102,8 +102,14 @@ function splitIntoPassages(text: string): string[] {
   let current = '';
 
   for (const paragraph of (paragraphs.length ? paragraphs : [cleanExtracted(text)])) {
-    const sentences = paragraph.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [paragraph];
-    for (const sentenceRaw of sentences) {
+    // Numbered course notes often arrive as one PDF line. Split at item markers
+    // before sentence chunking so a single practice passage does not contain a
+    // whole list of unrelated topics (for example, "1. ARPANET ... 2. TCP/IP ...").
+    const numberedItems = paragraph.split(/(?=\\s+\\d{1,2}[.)]\\s+)/).map((item) => item.trim()).filter(Boolean);
+    const units = numberedItems.length > 1 ? numberedItems : [paragraph];
+    for (const unit of units) {
+      const sentences = unit.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [unit];
+      for (const sentenceRaw of sentences) {
       const sentence = cleanExtracted(sentenceRaw);
       if (!sentence) continue;
       if (current && (current.length + sentence.length + 1 > 620 || current.length > 360)) {
@@ -120,10 +126,11 @@ function splitIntoPassages(text: string): string[] {
       } else {
         current = current ? `${current} ${sentence}` : sentence;
       }
-    }
-    if (current && current.length > 280) {
-      chunks.push(current);
-      current = '';
+      }
+      if (current && current.length > 280) {
+        chunks.push(current);
+        current = '';
+      }
     }
   }
   if (current) chunks.push(current);
