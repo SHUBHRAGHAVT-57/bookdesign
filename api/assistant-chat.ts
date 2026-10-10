@@ -45,7 +45,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     res.status(400).json({ error: 'The assistant needs a book, passage, and recent chat messages.' }); return;
   }
   const systemInstruction = [
-    'You are KeyTurn, a friendly and encouraging reading tutor inside a typing-practice app.',
+    'You are Rakhu, a friendly and encouraging reading tutor inside a typing-practice app.',
     'Use the supplied book passage as your primary source. You may use general knowledge to explain ideas beyond the text, but clearly distinguish outside context from what the passage says.',
     'Explain simply, give examples when useful, and do not claim the passage says something it does not.',
     'Keep answers focused and reasonably concise. Support comprehension, vocabulary, summaries, and gentle self-testing.',
@@ -64,26 +64,44 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const models = isRecord(modelPayload) && Array.isArray(modelPayload.models) ? modelPayload.models.filter((item): item is Record<string, unknown> =>
       isRecord(item) && typeof item.name === 'string' && /^models\/[a-zA-Z0-9._-]+$/.test(item.name) &&
       Array.isArray(item.supportedGenerationMethods) && item.supportedGenerationMethods.includes('generateContent')) : [];
-    const flash = models.filter((item) => /gemini.*flash/i.test(String(item.name)));
-    const preferred = ['models/gemini-2.5-flash', 'models/gemini-2.0-flash'];
-    const model = preferred.map((name) => flash.find((item) => item.name === name)).find(Boolean) ?? flash[0] ?? models[0];
-    if (!model || typeof model.name !== 'string') { res.status(502).json({ error: 'No Gemini model is available for chat on this API key.' }); return; }
+    const flash = models.filter((item) => /^models\/gemini-[a-z0-9.-]*flash[a-z0-9.-]*$/i.test(String(item.name)));
+    const preferred = ['models/gemini-2.5-flash', 'models/gemini-3.5-flash', 'models/gemini-3.6-flash', 'models/gemini-3.8-flash', 'models/gemini-2.5-flash-lite'];
+    const candidates = [
+      ...preferred.map((name) => flash.find((item) => item.name === name)).filter((item): item is Record<string, unknown> => !!item),
+      ...flash.filter((item) => !preferred.includes(String(item.name))),
+    ];
+    if (!candidates.length) { res.status(502).json({ error: 'No Gemini Flash text-generation model is available for this API key. Check Gemini API access.' }); return; }
     const contents = messages.map((message) => ({
       role: message.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: message.content }],
     }));
-    const generated = await fetch('https://generativelanguage.googleapis.com/v1beta/' + model.name + ':generateContent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemInstruction }] },
-        contents,
-        generationConfig: { temperature: 0.55, maxOutputTokens: 700 },
-      }),
-    });
+    let generated: Response | null = null;
+    for (const model of candidates) {
+      const modelId = String(model.name).replace(/^models\//, '');
+      const attempt = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelId) + ':generateContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          contents,
+          generationConfig: { temperature: 0.55, maxOutputTokens: 700 },
+        }),
+      });
+      generated = attempt;
+      if (attempt.ok || (attempt.status !== 404 && attempt.status !== 400)) break;
+    }
+    if (!generated) { res.status(502).json({ error: 'Gemini has no usable Flash model for this API key.' }); return; }
     const output: unknown = await generated.json();
     if (!generated.ok) {
-      res.status(generated.status === 429 ? 429 : 502).json({ error: generated.status === 429 ? 'Gemini is busy or its quota is exhausted. Please try again shortly.' : 'Gemini could not answer right now. Please try again.' }); return;
+      const status = generated.status;
+      const message = status === 429
+        ? 'Gemini is busy or its quota is exhausted. Please try again shortly.'
+        : status === 401 || status === 403
+          ? 'Gemini did not authorize this API key. Check GEMINI_API_KEY and Gemini API access.'
+          : status === 404
+            ? 'None of the available Flash models accepted this request. Check Gemini API access for this key.'
+            : 'Gemini could not answer (provider status ' + status + '). Check model access and try again.';
+      res.status(status === 429 ? 429 : 502).json({ error: message }); return;
     }
     const candidate = isRecord(output) && Array.isArray(output.candidates) ? output.candidates[0] : null;
     const parts = isRecord(candidate) && isRecord(candidate.content) && Array.isArray(candidate.content.parts) ? candidate.content.parts : [];
