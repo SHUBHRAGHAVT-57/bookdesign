@@ -35,10 +35,33 @@ import TypingPage from './components/TypingPage';
 const SUCCESS_MS = 900;
 const TURN_MS = 1000;
 
+function readSavedCustomBook(): { title: string; passages: Passage[] } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem('keyturn.custom-book');
+    if (!raw) return null;
+    const value: unknown = JSON.parse(raw);
+    if (typeof value !== 'object' || value === null) return null;
+    const book = value as { title?: unknown; passages?: unknown };
+    if (typeof book.title !== 'string' || !Array.isArray(book.passages) || book.passages.length === 0) return null;
+    const valid = book.passages.every((item) =>
+      typeof item === 'object' && item !== null &&
+      typeof (item as Passage).id === 'string' &&
+      typeof (item as Passage).text === 'string' &&
+      typeof (item as Passage).title === 'string' &&
+      Array.isArray((item as Passage).concepts) &&
+      typeof (item as Passage).question?.prompt === 'string',
+    );
+    return valid ? { title: book.title, passages: book.passages as Passage[] } : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
-  const [state, setState] = useLocalStorage<AppState>(STORAGE_KEY, STATE_VERSION, createInitialState, isAppState);
-  const [customBook, setCustomBook] = useState<{ title: string; passages: Passage[] } | null>(null);
+  const [customBook, setCustomBook] = useState<{ title: string; passages: Passage[] } | null>(readSavedCustomBook);
   const passages = customBook?.passages ?? PASSAGES;
+  const [state, setState] = useLocalStorage<AppState>(STORAGE_KEY, STATE_VERSION, createInitialState, (value) => isAppState(value, passages));
   const [transition, setTransition] = useState<Transition>('idle');
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
@@ -240,6 +263,12 @@ export default function App() {
   const startBook = (book?: { title: string; passages: Passage[] }): void => {
     setReviewIndex(null);
     setCustomBook(book ?? null);
+    try {
+      if (book) window.sessionStorage.setItem('keyturn.custom-book', JSON.stringify(book));
+      else window.sessionStorage.removeItem('keyturn.custom-book');
+    } catch {
+      // The selected PDF still works for this session if browser storage is unavailable.
+    }
     setState((s) => ({ ...createInitialState(), settings: s.settings, phase: 'typing', pageIndex: 0 }));
   };
 
