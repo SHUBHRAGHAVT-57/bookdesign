@@ -31,6 +31,7 @@ import RecallModal from './components/RecallModal';
 import SettingsMenu from './components/SettingsMenu';
 import StatsPanel from './components/StatsPanel';
 import TypingPage from './components/TypingPage';
+import AssistantPanel from './components/AssistantPanel';
 
 const SUCCESS_MS = 900;
 const TURN_MS = 1000;
@@ -66,6 +67,7 @@ export default function App() {
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
   const [demoTyping, setDemoTyping] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const timers = useRef<number[]>([]);
   const sequenceRunning = useRef(false);
 
@@ -160,7 +162,7 @@ export default function App() {
   }, []);
 
   const handleType = (raw: string): void => {
-    if (phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping) return;
+    if (phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping || assistantOpen) return;
     // TypingPage rejects incorrect keys before they enter this controlled value.
     // Keep the engine focused on accepted characters and existing progress.
     const result = applyTyping(progress, raw, passage.text, wordMap, Date.now());
@@ -296,7 +298,7 @@ export default function App() {
 
   const summary = summarizeBook(state, passages);
   const showBook = phase === 'typing' || phase === 'recall' || phase === 'echo';
-  const typingActive = phase === 'typing' && transition === 'idle' && reviewIndex === null;
+  const typingActive = phase === 'typing' && transition === 'idle' && reviewIndex === null && !assistantOpen;
   const demoWords = passage.concepts.filter((word) =>
     passage.text.toLowerCase().indexOf(word.toLowerCase(), progress.typed.length) >= progress.typed.length,
   );
@@ -378,7 +380,7 @@ export default function App() {
                   target={leftPassage.text}
                   map={leftMap}
                   typed={leftProgress.typed}
-                  disabled={phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping || !isLeftActive}
+                  disabled={phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping || assistantOpen || !isLeftActive}
                   complete={isComplete(leftProgress.typed, leftPassage.text)}
                   ariaLabel="Type the passage on the left page"
                   onType={handleType}
@@ -391,7 +393,7 @@ export default function App() {
                     target={rightPassage.text}
                     map={rightMap}
                     typed={rightProgress.typed}
-                    disabled={phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping || isLeftActive}
+                    disabled={phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping || assistantOpen || isLeftActive}
                     complete={isComplete(rightProgress.typed, rightPassage.text)}
                     ariaLabel="Type the passage on the right page"
                     onType={handleType}
@@ -439,6 +441,41 @@ export default function App() {
           isLast={isLastPage}
           onDone={handleEchoDone}
         />
+      )}
+
+      {showBook && (
+        <>
+          <button
+            type="button"
+            className="assistant-fab"
+            aria-label={assistantOpen ? 'Close AI assistant' : 'Open AI assistant'}
+            aria-expanded={assistantOpen}
+            onClick={() => {
+              if (!assistantOpen) {
+                // Exclude time spent chatting from the next keystroke's active-time gap.
+                setState((s) => ({
+                  ...s,
+                  pages: {
+                    ...s.pages,
+                    [passage.id]: {
+                      ...(s.pages[passage.id] ?? createEmptyProgress()),
+                      metrics: { ...(s.pages[passage.id] ?? createEmptyProgress()).metrics, lastKeyAt: null },
+                    },
+                  },
+                }));
+              }
+              setAssistantOpen((open) => !open);
+            }}
+          >{assistantOpen ? '×' : '✦'}</button>
+          {assistantOpen && (
+            <AssistantPanel
+              bookTitle={customBook?.title ?? 'Small Wonders'}
+              passage={passage}
+              pageNumber={displayIndex + 1}
+              onClose={() => setAssistantOpen(false)}
+            />
+          )}
+        </>
       )}
 
       {confirmingReset && <ConfirmDialog onConfirm={confirmReset} onCancel={() => setConfirmingReset(false)} />}
