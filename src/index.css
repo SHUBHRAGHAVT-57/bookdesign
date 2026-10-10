@@ -787,8 +787,11 @@ button, input, textarea {
   text-transform: uppercase;
 }
 .cover-title {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   font-family: var(--serif);
-  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-size: clamp(1.6rem, 4vw, 3.2rem);
   line-height: 1.1;
 }
 .cover-sub {
