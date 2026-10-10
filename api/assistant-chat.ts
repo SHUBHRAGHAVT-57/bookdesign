@@ -88,7 +88,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         }),
       });
       generated = attempt;
-      if (attempt.ok || (attempt.status !== 404 && attempt.status !== 400)) break;
+      if (attempt.ok || ![400, 404, 429, 500, 502, 503, 504].includes(attempt.status)) break;
     }
     if (!generated) { res.status(502).json({ error: 'Gemini has no usable Flash model for this API key.' }); return; }
     const output: unknown = await generated.json();
