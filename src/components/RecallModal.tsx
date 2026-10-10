@@ -19,7 +19,7 @@ export default function RecallModal({ passage, questions, result, echoPlan, isLa
   const [touched, setTouched] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Array<{ answer: string; correct: boolean; concept: string }>>([]);
-  const question = questions[questionIndex] ?? questions[0];
+  const question = questions[questionIndex] ?? questions[0] ?? passage.question;
 
   const submit = (event: FormEvent): void => {
     event.preventDefault();
