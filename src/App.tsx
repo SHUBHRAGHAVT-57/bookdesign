@@ -161,6 +161,8 @@ export default function App() {
 
   const handleType = (raw: string): void => {
     if (phase !== 'typing' || transition !== 'idle' || reviewIndex !== null || demoTyping) return;
+    // TypingPage rejects incorrect keys before they enter this controlled value.
+    // Keep the engine focused on accepted characters and existing progress.
     const result = applyTyping(progress, raw, passage.text, wordMap, Date.now());
     if (!result.changed) return;
     setState((s) => ({ ...s, pages: { ...s.pages, [passage.id]: result.progress } }));
