@@ -49,10 +49,11 @@ interface TypingPageProps {
   typed: string;
   disabled: boolean;
   complete: boolean;
+  ariaLabel: string;
   onType: (raw: string) => void;
 }
 
-export default function TypingPage({ passageId, target, map, typed, disabled, complete, onType }: TypingPageProps) {
+export default function TypingPage({ passageId, target, map, typed, disabled, complete, ariaLabel, onType }: TypingPageProps) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
 
@@ -136,7 +137,7 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
             window.requestAnimationFrame(keepCaretVisible);
           }}
           onBlur={() => setFocused(false)}
-          aria-label="Type the source passage into your Memory Edition"
+          aria-label={ariaLabel}
           aria-describedby="typing-help"
           autoCapitalize="off"
           autoComplete="off"
