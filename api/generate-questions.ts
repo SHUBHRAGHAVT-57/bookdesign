@@ -92,6 +92,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     JSON.stringify(validPassages),
   ].join('\n\n');
 
+  let openaiFailure = '';
   try {
     // Prefer OpenAI for quality; if it is unavailable or returns invalid output,
     // fall through to Gemini so existing deployments keep working.
@@ -111,6 +112,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
             ],
           }),
         });
+        if (!openaiResponse.ok) {
+          openaiFailure = openaiResponse.status === 401 ? 'OpenAI rejected the API key (401). Check OPENAI_API_KEY in Vercel Preview and confirm the key is active.'
+            : openaiResponse.status === 429 ? 'OpenAI returned 429: check API billing, credits, and rate limits.'
+            : 'OpenAI returned HTTP ' + openaiResponse.status + '.';
+        }
         if (openaiResponse.ok) {
           const openaiPayload: unknown = await openaiResponse.json();
           const choices = isRecord(openaiPayload) && Array.isArray(openaiPayload.choices) ? openaiPayload.choices : [];
@@ -125,9 +131,15 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
               res.status(200).json({ questions, provider: 'openai' });
               return;
             }
+            openaiFailure = 'OpenAI responded, but its question data did not pass validation.';
+          } else {
+            openaiFailure = 'OpenAI responded without usable question data.';
           }
         }
-      } catch {
+      } catch (error) {
+        openaiFailure = error instanceof Error && error.name === 'TimeoutError'
+          ? 'OpenAI request timed out.'
+          : 'OpenAI request failed before a valid response was received.';
         // Continue to Gemini fallback on timeout, provider errors, or invalid output.
       }
     }
@@ -199,7 +211,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
             : status === 429
               ? 'Gemini is rate-limited or the API quota is exhausted. Check your AI Studio quota/billing and try again later. Local questions are still available.'
               : 'Gemini could not complete this request (provider status ' + status + '). Local questions are still available.';
-      res.status(status === 429 ? 429 : 502).json({ error: message });
+      const combinedMessage = openaiFailure ? openaiFailure + ' Gemini fallback also failed: ' + message : message;
+      res.status(status === 429 ? 429 : 502).json({ error: combinedMessage });
       return;
     }
     const payload: unknown = await response.json();
