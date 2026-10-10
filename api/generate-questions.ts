@@ -140,7 +140,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         }),
       });
       response = attempt;
-      if (attempt.ok || (attempt.status !== 404 && attempt.status !== 400)) break;
+      if (attempt.ok || ![400, 404, 429, 500, 502, 503, 504].includes(attempt.status)) break;
     }
     if (!response || !response.ok) {
       // Keep provider credentials and raw error payloads private, but give the user
