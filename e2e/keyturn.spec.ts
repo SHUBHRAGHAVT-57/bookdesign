@@ -129,3 +129,15 @@ test('production shell reloads with the network offline', async ({ page, context
     await context.setOffline(false);
   }
 });
+
+
+test('PDF importer rejects a non-PDF file with a helpful message', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#pdf-upload').setInputFiles({
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('This is not a PDF file.'),
+  });
+  await expect(page.getByRole('alert')).toContainText('Choose a PDF file.');
+  await expect(page.getByRole('button', { name: 'Open the demo book' })).toBeVisible();
+});

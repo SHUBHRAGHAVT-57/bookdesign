@@ -61,27 +61,27 @@ function isProgress(value: unknown): boolean {
 }
 
 /** Defensive check so a stale or hand-edited save can never crash the app. */
-export function isAppState(value: unknown): value is AppState {
+export function isAppState(value: unknown, passages: Passage[] = PASSAGES): value is AppState {
   if (!isRecord(value)) return false;
   if (typeof value.phase !== 'string' || !PHASES.includes(value.phase as Phase)) return false;
   if (!isNumber(value.pageIndex) || !Number.isInteger(value.pageIndex)) return false;
-  if (value.pageIndex < 0 || value.pageIndex >= PASSAGES.length) return false;
+  if (value.pageIndex < 0 || value.pageIndex >= passages.length) return false;
   if (!isRecord(value.pages) || !Array.isArray(value.completed)) return false;
   if (!isRecord(value.recall) || !isRecord(value.echo) || !isRecord(value.weakWords)) return false;
   if (!isRecord(value.settings)) return false;
   if (typeof value.settings.sound !== 'boolean' || typeof value.settings.reducedMotion !== 'boolean') return false;
   if (!Object.values(value.pages).every(isProgress)) return false;
 
-  const passage = PASSAGES[value.pageIndex];
+  const passage = passages[value.pageIndex];
   const page = value.pages[passage.id] as { typed?: string; echo?: unknown } | undefined;
   if ((value.phase === 'recall' || value.phase === 'echo') && page?.typed !== passage.text) return false;
   if (value.phase === 'echo' && !page?.echo) return false;
   return true;
 }
 
-function advance(state: AppState): AppState {
+function advance(state: AppState, passages: Passage[] = PASSAGES): AppState {
   const next = state.pageIndex + 1;
-  if (next < PASSAGES.length) return { ...state, phase: 'typing', pageIndex: next };
+  if (next < passages.length) return { ...state, phase: 'typing', pageIndex: next };
   return { ...state, phase: 'finished' };
 }
 
@@ -127,12 +127,12 @@ export function recordRecall(state: AppState, passage: Passage, answer: string, 
   };
 }
 
-export function continueAfterRecall(state: AppState, passage: Passage): AppState {
+export function continueAfterRecall(state: AppState, passage: Passage, passages: Passage[] = PASSAGES): AppState {
   if (state.phase !== 'recall' || !state.recall[passage.id]) return state;
-  return state.pages[passage.id]?.echo ? { ...state, phase: 'echo' } : advance(state);
+  return state.pages[passage.id]?.echo ? { ...state, phase: 'echo' } : advance(state, passages);
 }
 
-export function recordEcho(state: AppState, passage: Passage, result: EchoResult): AppState {
+export function recordEcho(state: AppState, passage: Passage, result: EchoResult, passages: Passage[] = PASSAGES): AppState {
   if (state.phase !== 'echo') return state;
   const prev = state.weakWords[result.word];
   const weakWords = {
@@ -143,7 +143,7 @@ export function recordEcho(state: AppState, passage: Passage, result: EchoResult
       reviewed: result.solved || (prev?.reviewed ?? false),
     },
   };
-  return advance({ ...state, echo: { ...state.echo, [passage.id]: result }, weakWords });
+  return advance({ ...state, echo: { ...state.echo, [passage.id]: result }, weakWords }, passages);
 }
 
 /** Records the final Memory Round. A first-try return retires a word; otherwise it stays shaky. */
@@ -163,13 +163,13 @@ export function recordEchoReturn(state: AppState, word: string, solved: boolean)
   };
 }
 
-export function summarizeBook(state: AppState): BookSummary {
+export function summarizeBook(state: AppState, passages: Passage[] = PASSAGES): BookSummary {
   let correctChars = 0;
   let activeMs = 0;
   let correctKeys = 0;
   let totalKeys = 0;
   let mistakes = 0;
-  for (const passage of PASSAGES) {
+  for (const passage of passages) {
     const progress = state.pages[passage.id] ?? createEmptyProgress();
     correctChars += countCorrect(progress.typed, passage.text);
     activeMs += progress.metrics.activeMs;
