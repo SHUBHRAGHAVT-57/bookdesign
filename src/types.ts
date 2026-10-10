@@ -110,7 +110,11 @@ export interface PageStats {
 export interface RecallResult {
   answer: string;
   correct: boolean;
+  correctCount?: number;
+  totalQuestions?: number;
 }
+
+export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export interface EchoExercise {
   before: string;
@@ -136,6 +140,8 @@ export interface WeakWordRecord {
 
 // ---------- Persisted app state ----------
 export interface AppState {
+  /** Optional for backwards compatibility with saves created before difficulty selection. */
+  difficulty?: Difficulty;
   phase: Phase;
   pageIndex: number;
   pages: Record<string, PageProgress>;

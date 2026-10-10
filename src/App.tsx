@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PASSAGES } from './data/bookData';
+import { PASSAGES, RECALL_QUESTIONS } from './data/bookData';
 import {
   STATE_VERSION,
   STORAGE_KEY,
@@ -13,12 +13,11 @@ import {
   resetProgress,
   summarizeBook,
 } from './lib/appState';
-import { checkRecallAnswer } from './lib/recall';
 import { playSound } from './lib/sound';
 import type { SoundKind } from './lib/sound';
 import { applyTyping, buildWordMap, createEmptyProgress, isComplete, summarizePage } from './lib/typingEngine';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import type { AppState, EchoResult, Settings, Transition } from './types';
+import type { AppState, Difficulty, EchoResult, Settings, Transition } from './types';
 import BookSpread from './components/BookSpread';
 import ConfirmDialog from './components/ConfirmDialog';
 import EchoReview from './components/EchoReview';
@@ -143,10 +142,9 @@ export default function App() {
     if (result.complete) beginCompletion(passage.id);
   };
 
-  const handleRecallSubmit = (answer: string): void => {
-    const correct = checkRecallAnswer(answer, passage.question.accepted);
+  const handleRecallSubmit = (answer: string, correct: boolean, concept: string | undefined, correctCount: number, totalQuestions: number): void => {
     play(correct ? 'chime' : 'error');
-    setState((s) => recordRecall(s, passage, answer, correct));
+    setState((s) => recordRecall(s, passage, answer, correct, concept, correctCount, totalQuestions));
   };
 
   const handleEchoDone = (result: EchoResult): void => {
@@ -234,6 +232,8 @@ export default function App() {
     setState((s) => resetProgress(s));
   };
 
+  const handleDifficultyChange = (difficulty: Difficulty): void => setState((s) => ({ ...s, difficulty }));
+
   const startBook = (): void => {
     setReviewIndex(null);
     setState((s) => ({ ...s, phase: 'typing', pageIndex: 0 }));
@@ -270,7 +270,7 @@ export default function App() {
       </header>
 
       <main id="main" className="app-main" tabIndex={-1}>
-        {phase === 'onboarding' && <Onboarding onStart={startBook} />}
+        {phase === 'onboarding' && <Onboarding difficulty={state.difficulty ?? 'medium'} onDifficultyChange={handleDifficultyChange} onStart={startBook} />}
 
         {showBook && (
           <>
@@ -367,6 +367,7 @@ export default function App() {
         <RecallModal
           key={passage.id}
           passage={passage}
+          questions={(RECALL_QUESTIONS[passage.id] ?? [passage.question]).slice(0, state.difficulty === 'easy' ? 2 : state.difficulty === 'hard' ? 6 : 4)}
           result={state.recall[passage.id]}
           echoPlan={progress.echo}
           isLast={isLastPage}
