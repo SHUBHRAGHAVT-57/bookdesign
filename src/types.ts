@@ -1,5 +1,7 @@
 // ---------- Book content ----------
 export interface RecallQuestion {
+  /** Question category used for custom-book practice. Demo-book questions may omit it. */
+  type?: 'comprehension' | 'recall' | 'vocabulary';
   prompt: string;
   /** Keywords / short phrases; an answer containing any of them counts as correct. */
   accepted: string[];
