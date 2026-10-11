@@ -759,7 +759,7 @@ button, input, textarea {
 /* ---------- Cover / onboarding ---------- */
 .cover {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   max-width: 940px;
   margin: 28px auto 0;
   border-radius: 8px;
@@ -767,6 +767,7 @@ button, input, textarea {
   animation: arrive 0.45s ease-out;
 }
 .cover-board {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -786,8 +787,11 @@ button, input, textarea {
   text-transform: uppercase;
 }
 .cover-title {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   font-family: var(--serif);
-  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-size: clamp(1.6rem, 4vw, 3.2rem);
   line-height: 1.1;
 }
 .cover-sub {
@@ -804,6 +808,8 @@ button, input, textarea {
   text-transform: uppercase;
 }
 .cover-page {
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: clamp(24px, 4vw, 44px);
   background: var(--paper);
   background-image: var(--grain);
@@ -828,6 +834,80 @@ button, input, textarea {
 .cover-note {
   font-size: 0.9rem;
   color: var(--faint-strong);
+}
+
+/* PDF upload is a primary onboarding action; keep it visible and touch-friendly. */
+.pdf-upload {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 253, 246, 0.72);
+}
+.pdf-upload .field-label {
+  display: block;
+  font-weight: 700;
+  color: var(--ink);
+}
+.pdf-upload input[type="file"] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf6;
+  color: var(--ink);
+}
+.pdf-upload .ai-question-option {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.pdf-upload .ai-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.pdf-upload .ai-consent input {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+.pdf-upload .modal-note,
+.pdf-upload .pdf-success {
+  color: var(--faint-strong);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+.pdf-upload .pdf-success {
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+.cover-page .pdf-upload .btn {
+  align-self: stretch;
+}
+@media (max-width: 760px) {
+  .cover {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 12px;
+  }
+  .cover-board {
+    min-height: 220px;
+    padding: 36px 28px;
+    border-radius: 8px 8px 0 0;
+  }
+  .cover-page {
+    border-radius: 0 0 8px 8px;
+    padding: 24px 20px;
+  }
 }
 .cover-page .btn {
   align-self: flex-start;
@@ -1456,7 +1536,7 @@ button, input, textarea {
 
 /* ---------- User PDF import ---------- */
 .pdf-upload { margin: 18px 0 22px; padding: 16px; border: 1px dashed var(--line); border-radius: 8px; background: rgba(255, 253, 246, 0.55); }
-.pdf-upload .field { width: 100%; min-width: 0; }
+.pdf-upload .field { display: block; width: 100%; max-width: 100%; min-width: 0; }
 .pdf-success { color: var(--accent); font-size: 0.9rem; font-weight: 700; }
 .pdf-upload button { margin-top: 8px; }
 
