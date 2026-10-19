@@ -2,9 +2,10 @@
 
 Read → Type → Recall → Review → Remember.
 
-A fully offline, frontend-only hackathon MVP. Read a source passage on the left page, type it into your own
-Memory Edition on the right (correct letters turn into permanent ink), answer one recall question, and get a
-fill-in-the-blank Echo Review on a word you struggled with. Progress is saved in `localStorage`.
+A browser-first reading and memory-practice app. Read a source passage, type it into your own Memory Edition
+(correct letters turn into permanent ink), answer recall questions, and get an Echo Review on words you struggled
+with. Progress and imported-book data are stored in this browser. The core practice flow works offline after its
+assets are cached; optional PDF extraction and Rakhu AI features have separate network requirements.
 
 ## Run
 
@@ -16,6 +17,14 @@ npm run preview    # serve the production build
 ```
 
 Open the built app with `npm run preview` (module scripts do not load from `file://`).
+
+## Import a PDF and use Rakhu
+
+- Upload a text-based PDF from the opening cover. Text extraction happens in the browser; the PDF file itself is not uploaded to the AI service. Scanned/image-only PDFs are not OCR'd.
+- Local recall questions remain available without AI. PDF.js is loaded on demand from a CDN, so the first PDF import needs an internet connection.
+- Rakhu is the optional in-book assistant. When you submit a chat question, the current passage and recent chat context are sent to the Gemini API. AI enhancement for imported-book questions is a separate opt-in; only extracted passage text is sent, not the original PDF.
+- To enable server-side AI endpoints on Vercel, set `GEMINI_API_KEY` in the project's environment variables. Never add the key to client-side code or commit it. Without the key or a reachable model, local practice and local questions should remain usable.
+- Chat history and the selected custom book are stored in browser `localStorage`; they are not synced between devices.
 
 ## Demo script
 
@@ -50,6 +59,8 @@ Open the built app with `npm run preview` (module scripts do not load from `file
 | `src/components/RecallModal.tsx`, `EchoReview.tsx` | Recall question and Echo Review dialogs |
 | `src/components/FinishedBook.tsx` | Memory Report, Echo returns Memory Round, Copy summary |
 | `src/components/SettingsMenu.tsx` | Sound and motion toggles, Reset demo, presenter Demo assist |
+| `src/components/BookAssistantPanel.tsx` | Rakhu in-book chat panel |
+| `api/assistant-chat.ts`, `api/generate-questions.ts` | Optional server-side Gemini endpoints; credentials stay in deployment environment |
 | `src/components/ErrorBoundary.tsx` | Friendly recovery screen if anything unexpected throws |
 | `public/sw.js`, `public/manifest.webmanifest` | Hand-written offline service worker and web app manifest |
 | `docs/` | `PITCH.md`, `IMPACT.md`, `ROADMAP.md`, `one-pager.html`, layout screenshots |
@@ -97,5 +108,5 @@ JavaScript/CSS assets are cached after the first production visit; saved progres
 - The offline cache takes effect in production after the first online load; the development server does not register a service worker.
 - Lighthouse scores have not been measured in this environment.
 - Demo assist auto-types pages, so speed numbers for those pages are not real typing performance.
-- Only six short, original, English passages are bundled; importing your own text is on the roadmap.
+- Six short, original, English passages are bundled as the demo book. Text-based PDF import is available, but scanned PDFs are not OCR'd and PDF extraction initially needs a network connection.
 - Whether KeyTurn improves retention is a hypothesis. `docs/IMPACT.md` describes how to test it.
