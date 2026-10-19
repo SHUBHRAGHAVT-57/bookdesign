@@ -1452,3 +1452,10 @@ button, input, textarea {
 .crash .btn {
   justify-self: start;
 }
+
+
+/* ---------- User PDF import ---------- */
+.pdf-upload { margin: 18px 0 22px; padding: 16px; border: 1px dashed var(--line); border-radius: 8px; background: rgba(255, 253, 246, 0.55); }
+.pdf-upload .field { width: 100%; min-width: 0; }
+.pdf-success { color: var(--accent); font-size: 0.9rem; font-weight: 700; }
+.pdf-upload button { margin-top: 8px; }
