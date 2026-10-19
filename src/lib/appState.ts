@@ -21,6 +21,7 @@ export function createInitialState(): AppState {
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   return {
+    difficulty: 'medium',
     phase: 'onboarding',
     pageIndex: 0,
     pages: {},
@@ -104,7 +105,7 @@ export function completePage(state: AppState, passage: Passage, now: number): Ap
 }
 
 /** Saves the recall answer and decides whether an Echo Review is needed. */
-export function recordRecall(state: AppState, passage: Passage, answer: string, correct: boolean): AppState {
+export function recordRecall(state: AppState, passage: Passage, answer: string, correct: boolean, concept?: string, correctCount?: number, totalQuestions?: number): AppState {
   const progress = state.pages[passage.id];
   if (state.phase !== 'recall' || !progress || state.recall[passage.id]) return state;
 
@@ -112,7 +113,7 @@ export function recordRecall(state: AppState, passage: Passage, answer: string, 
   if (progress.weak) {
     echo = { word: progress.weak.word, source: 'typing', reason: progress.weak.reason, stats: progress.weak.stats };
   } else if (!correct) {
-    const word = passage.question.concept;
+    const word = concept ?? passage.question.concept;
     echo = {
       word,
       source: 'recall',
@@ -122,7 +123,7 @@ export function recordRecall(state: AppState, passage: Passage, answer: string, 
   }
   return {
     ...state,
-    recall: { ...state.recall, [passage.id]: { answer, correct } },
+    recall: { ...state.recall, [passage.id]: { answer, correct, correctCount, totalQuestions } },
     pages: { ...state.pages, [passage.id]: { ...progress, echo } },
   };
 }
