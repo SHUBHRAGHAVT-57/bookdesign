@@ -52,8 +52,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const groqKey = process.env.GROQ_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!groqKey && !geminiKey && !(openaiKey && process.env.ENABLE_PAID_OPENAI === 'true')) {
     res.status(503).json({ error: 'AI questions are not configured yet. Local questions still work.' });
     return;
   }
@@ -91,11 +93,114 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     JSON.stringify(validPassages),
   ].join('\n\n');
 
+  let groqFailure = '';
   try {
+    // Groq is the preferred free-tier provider. Never send requests to paid OpenAI
+    // unless the user explicitly enables it in the server environment.
+    if (groqKey) {
+      try {
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          signal: AbortSignal.timeout(15000),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + groqKey },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: 'Generate exactly one grounded study question per supplied passage. Use only facts in each passage. Return JSON with a questions array. Each item must contain id, type (comprehension, recall, or vocabulary), prompt, accepted (array of short answer variants), modelAnswer, and concept. Keep answers concise.' },
+              { role: 'user', content: prompt },
+            ],
+          }),
+        });
+        if (groqResponse.ok) {
+          const groqPayload: unknown = await groqResponse.json();
+          const choices = isRecord(groqPayload) && Array.isArray(groqPayload.choices) ? groqPayload.choices : [];
+          const choice = choices[0];
+          const message = isRecord(choice) && isRecord(choice.message) ? choice.message : null;
+          const content = message && typeof message.content === 'string' ? message.content : '';
+          if (content) {
+            const parsedGroq: unknown = JSON.parse(content);
+            const raw = isRecord(parsedGroq) ? parsedGroq.questions : null;
+            const questions = validateQuestions(raw, new Set(validPassages.map((passage) => passage.id)));
+            if (questions.length === validPassages.length) {
+              res.status(200).json({ questions, provider: 'groq' });
+              return;
+            }
+            groqFailure = 'Groq returned question data that did not pass validation.';
+          } else {
+            groqFailure = 'Groq returned an empty response.';
+          }
+        } else {
+          groqFailure = groqResponse.status === 429
+            ? 'Groq free-tier rate limit or quota reached.'
+            : groqResponse.status === 401 || groqResponse.status === 403
+              ? 'Groq did not authorize the API key. Check GROQ_API_KEY in Vercel.'
+              : 'Groq returned HTTP ' + groqResponse.status + '.';
+        }
+      } catch {
+        groqFailure = 'Groq request failed or timed out.';
+      }
+    }
+  let openaiFailure = '';
+  try {
+    // Prefer OpenAI for quality; if it is unavailable or returns invalid output,
+    // fall through to Gemini so existing deployments keep working.
+    if (openaiKey && process.env.ENABLE_PAID_OPENAI === 'true') {
+      try {
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          signal: AbortSignal.timeout(12000),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + openaiKey },
+          body: JSON.stringify({
+            model: 'gpt-4.1-mini',
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: 'Generate exactly one grounded study question per supplied passage. Use only facts in each passage. Return JSON with a questions array. Each item must contain id, type (comprehension, recall, or vocabulary), prompt, accepted (array of short answer variants), modelAnswer, and concept. Keep answers concise.' },
+              { role: 'user', content: prompt },
+            ],
+          }),
+        });
+        if (!openaiResponse.ok) {
+          openaiFailure = openaiResponse.status === 401 ? 'OpenAI rejected the API key (401). Check OPENAI_API_KEY in Vercel Preview and confirm the key is active.'
+            : openaiResponse.status === 429 ? 'OpenAI returned 429: check API billing, credits, and rate limits.'
+            : 'OpenAI returned HTTP ' + openaiResponse.status + '.';
+        }
+        if (openaiResponse.ok) {
+          const openaiPayload: unknown = await openaiResponse.json();
+          const choices = isRecord(openaiPayload) && Array.isArray(openaiPayload.choices) ? openaiPayload.choices : [];
+          const choice = choices[0];
+          const message = isRecord(choice) && isRecord(choice.message) ? choice.message : null;
+          const content = message && typeof message.content === 'string' ? message.content : '';
+          if (content) {
+            const parsedOpenAI: unknown = JSON.parse(content);
+            const raw = isRecord(parsedOpenAI) ? parsedOpenAI.questions : null;
+            const questions = validateQuestions(raw, new Set(validPassages.map((passage) => passage.id)));
+            if (questions.length === validPassages.length) {
+              res.status(200).json({ questions, provider: 'openai' });
+              return;
+            }
+            openaiFailure = 'OpenAI responded, but its question data did not pass validation.';
+          } else {
+            openaiFailure = 'OpenAI responded without usable question data.';
+          }
+        }
+      } catch (error) {
+        openaiFailure = error instanceof Error && error.name === 'TimeoutError'
+          ? 'OpenAI request timed out.'
+          : 'OpenAI request failed before a valid response was received.';
+        // Continue to Gemini fallback on timeout, provider errors, or invalid output.
+      }
+    }
+    if (!geminiKey) {
+      res.status(502).json({ error: (groqFailure ? groqFailure + ' ' : '') + 'No free AI fallback is configured. Add GEMINI_API_KEY or use local questions, which are still available.' });
+      return;
+    }
     // Discover models available to this exact API key/project instead of relying on
     // a hard-coded model name that may not be enabled for the user's API project.
     const modelListResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
-      headers: { 'x-goog-api-key': apiKey },
+      headers: { 'x-goog-api-key': geminiKey },
     });
     if (!modelListResponse.ok) {
       const status = modelListResponse.status;
@@ -117,38 +222,47 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
           Array.isArray(item.supportedGenerationMethods) &&
           item.supportedGenerationMethods.includes('generateContent'))
       : [];
-    const flashModels = availableModels.filter((item) => /gemini.*flash/i.test(String(item.name)));
-    const preferredNames = ['models/gemini-2.5-flash', 'models/gemini-2.0-flash'];
-    const model = preferredNames
-      .map((name) => flashModels.find((item) => item.name === name))
-      .find((item) => item !== undefined) ?? flashModels[0] ?? availableModels[0];
-    if (!model || typeof model.name !== 'string') {
-      res.status(502).json({ error: 'This Gemini API key has no available model that supports question generation. Check the model access in Google AI Studio. Local questions are still available.' });
+    // Select only text-capable Gemini Flash models; never fall back to embeddings or media models.
+    const flashModels = availableModels.filter((item) => /^models\/gemini-[a-z0-9.-]*flash[a-z0-9.-]*$/i.test(String(item.name)));
+    const preferredNames = ['models/gemini-2.5-flash', 'models/gemini-3.5-flash', 'models/gemini-3.6-flash', 'models/gemini-3.8-flash', 'models/gemini-2.5-flash-lite'];
+    const candidates = [
+      ...preferredNames.map((name) => flashModels.find((item) => item.name === name)).filter((item): item is Record<string, unknown> => !!item),
+      ...flashModels.filter((item) => !preferredNames.includes(String(item.name))),
+    ].slice(0, 3);
+    if (!candidates.length) {
+      res.status(502).json({ error: 'This Gemini API key has no available Flash text model. Check Gemini API access in Google AI Studio. Local questions are still available.' });
       return;
     }
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-      }),
-    });
-    if (!response.ok) {
+    let response: Response | null = null;
+    for (const model of candidates) {
+      const modelId = String(model.name).replace(/^models\//, '');
+      const attempt = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`, {
+        signal: AbortSignal.timeout(12000),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+        }),
+      });
+      response = attempt;
+      if (attempt.ok || ![400, 404, 429, 500, 502, 503, 504].includes(attempt.status)) break;
+    }
+    if (!response || !response.ok) {
       // Keep provider credentials and raw error payloads private, but give the user
       // a useful next step for common configuration and quota failures.
-      const status = response.status;
+      const status = response?.status ?? 502;
       const message = status === 400
-        ? 'Gemini rejected the request. Check the model/API configuration and try again. Local questions are still available.'
+        ? 'Gemini rejected the request for every available Flash model. Check Gemini API access and model availability. Local questions are still available.'
         : status === 401 || status === 403
           ? 'Gemini did not authorize this API key. Check that GEMINI_API_KEY is valid and enabled for the Gemini API. Local questions are still available.'
           : status === 404
-            ? 'The configured Gemini model was not found for this API. Check the model name in the server endpoint. Local questions are still available.'
+            ? 'None of the available Flash models accepted this request. Check Gemini API access for this key. Local questions are still available.'
             : status === 429
               ? 'Gemini is rate-limited or the API quota is exhausted. Check your AI Studio quota/billing and try again later. Local questions are still available.'
               : 'Gemini could not complete this request (provider status ' + status + '). Local questions are still available.';
-      res.status(status === 429 ? 429 : 502).json({ error: message });
+      const combinedMessage = [groqFailure, openaiFailure, message].filter(Boolean).join(' ');
+      res.status(status === 429 ? 429 : 502).json({ error: combinedMessage });
       return;
     }
     const payload: unknown = await response.json();

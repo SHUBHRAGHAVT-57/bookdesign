@@ -18,17 +18,27 @@ function isQuestion(value: unknown): value is Omit<RecallQuestion, 'type'> & { t
 }
 
 /** Calls the optional server-side AI endpoint in small batches; the PDF stays in the browser. */
-export async function generateAiQuestions(passages: Passage[]): Promise<Passage[]> {
+export async function generateAiQuestions(passages: Passage[], onProgress?: (done: number, total: number) => void): Promise<Passage[]> {
   const generated: GeneratedQuestion[] = [];
+  const totalBatches = Math.ceil(passages.length / 8);
   for (let start = 0; start < passages.length; start += 8) {
     const batch = passages.slice(start, start + 8);
-    const response = await fetch('/api/generate-questions', {
+    let response: Response;
+    try {
+      response = await fetch('/api/generate-questions', {
+      signal: AbortSignal.timeout(25000),
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         passages: batch.map(({ id, text, concepts }) => ({ id, text, concepts })),
       }),
-    });
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'TimeoutError') {
+        throw new Error('The AI provider took too long to answer. Your local questions are safe; try again later or continue without AI.');
+      }
+      throw new Error('Could not reach the AI provider. Your local questions are safe; check your connection or try again later.');
+    }
 
     let payload: ApiResponse;
     try {
@@ -59,6 +69,7 @@ export async function generateAiQuestions(passages: Passage[]): Promise<Passage[
         });
       }
     }
+    onProgress?.(Math.min(start + batch.length, passages.length) / 8 > totalBatches ? totalBatches : Math.ceil((start + batch.length) / 8), totalBatches);
     if (generated.length !== start + batch.length) {
       throw new Error('The AI service did not return a question for every passage. Your local questions are unchanged.');
     }
