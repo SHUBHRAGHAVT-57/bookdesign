@@ -18,6 +18,12 @@ npm run preview    # serve the production build
 
 Open the built app with `npm run preview` (module scripts do not load from `file://`).
 
+## Activity dashboard
+
+- Open **Activity dashboard** from the app header to review typing speed, keystroke accuracy, active typing time, mistakes/corrections, recall performance, Echo reviews, page completion, and page-by-page typing progress.
+- Visit history is stored locally in this browser (up to the latest 365 app opens) and visualized for the last seven days. It is a browser visit count, not an account login count.
+- KeyTurn currently has no account system or server-side analytics. Progress and visit history are local to this browser and are removed if its site storage is cleared.
+
 ## Import a PDF and use Rakhu
 
 - Upload a text-based PDF from the opening cover. Text extraction happens in the browser; the PDF file itself is not uploaded to the AI service. Scanned/image-only PDFs are not OCR'd.
