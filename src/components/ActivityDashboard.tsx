@@ -8,6 +8,7 @@ interface ActivityDashboardProps {
   passages: Passage[];
   activity: ActivitySummary;
   onClose: () => void;
+  fullPage?: boolean;
 }
 
 function percent(numerator: number, denominator: number): number {
@@ -18,7 +19,7 @@ function dayLabel(date: Date): string {
   return new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(date);
 }
 
-export default function ActivityDashboard({ state, summary, passages, activity, onClose }: ActivityDashboardProps) {
+export default function ActivityDashboard({ state, summary, passages, activity, onClose, fullPage = false }: ActivityDashboardProps) {
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(today);
@@ -41,15 +42,15 @@ export default function ActivityDashboard({ state, summary, passages, activity, 
   const uniqueDays = new Set(activity.sessions.map((session) => new Date(session.startedAt).toLocaleDateString())).size;
 
   return (
-    <div className="activity-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="activity-dashboard" role="dialog" aria-modal="true" aria-labelledby="activity-title">
+    <div className={fullPage ? 'activity-page-shell' : 'activity-backdrop'} role={fullPage ? undefined : 'presentation'} onMouseDown={(event) => { if (!fullPage && event.target === event.currentTarget) onClose(); }}>
+      <section className="activity-dashboard" role={fullPage ? undefined : 'dialog'} aria-modal={fullPage ? undefined : true} aria-labelledby="activity-title">
         <header className="activity-head">
           <div>
             <p className="activity-eyebrow">KEYTURN · PERSONAL INSIGHTS</p>
             <h2 id="activity-title">Activity dashboard</h2>
             <p>Your reading, typing and recall progress on this browser.</p>
           </div>
-          <button type="button" className="activity-close" onClick={onClose} aria-label="Close activity dashboard">×</button>
+          <button type="button" className="activity-close" onClick={onClose} aria-label={fullPage ? 'Return to reading workspace' : 'Close activity dashboard'}>{fullPage ? '←' : '×'}</button>
         </header>
 
         <div className="activity-grid">

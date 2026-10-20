@@ -35,6 +35,9 @@ import AssistantPanel from './components/BookAssistantPanel';
 import ActivityDashboard from './components/ActivityDashboard';
 import { readActivitySummary, recordAppSession } from './lib/activity';
 import type { ActivitySummary } from './lib/activity';
+import { readKeyMetrics, recordKeyAttempt } from './lib/keyAnalytics';
+import type { KeyMetrics } from './lib/keyAnalytics';
+import KeyboardCoach from './components/KeyboardCoach';
 
 const RAKHU_AVATAR = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCACAAIADASIAAhEBAxEB/8QAGwAAAwEBAQEBAAAAAAAAAAAABAUGAwIHAQD/xAA1EAACAQMDAgUCBAUEAwAAAAABAgMABBEFEiExQQYTIlFhMnEUUoGRBxUjQsEzYrHhFqHR/8QAGQEAAwEBAQAAAAAAAAAAAAAAAQIDBAAF/8QAIBEAAgICAwEBAQEAAAAAAAAAAAECEQMhEjFBE1EiYf/aAAwDAQACEQMRAD8AgtItoWi2pcCOY/m4qw0a9uY3SzuId2RxIvSoxYkCAYoyxv7qzuEWOQlSwGGOcVGcFJFYzpnohQHtXKQAnn3r5YTvMjLJgsvcd6KUAGsbVOjQnezSCFc0fCFVsHFJWvWjlACk9jXK6m8mFAwc4zXcWGyjGoW8Mqxs4Ga+Sa5bxTMjOOBmpm6jwFkZ8sT79KBldZJw27Ip1EDZbweI7WUjDAAnFRV3dWs+u3MsttvHmMyuoyTRulafHenMjBIlf14bB+1N7+yhuLNoLFER1XEZj4J+DTJUUjilJWSN3q05YojMYV6A038GGG71lHdiJVztTHbFYHwzqCxBJ4ShbkN2/em3h7Rl0bUo7p5w+UI+BR1QjU6sB/iDObXUomijxIR/qH/iomHUJHuUS4IMe/ccDqaufEmmtq2sySOszRrgKEGaV3GgJHDsg0y4d89XGK6LSQjTZmLb8VdRI+1iVyMHoKnvE3h5kLSRpzVpoOjXcWoedNaeUgXvR2r6es8ZBWgpU9HSXI8o3g98V3a5a9hXtvGf3rSXSLiJ/SyyL8HBp/4V0W0u7km73Ax8le5rTKSSM8Ytsb2N4sPmhnGSeKb2SPK/9ZCq9QexopbXSY12xRIrDj1DJoea7W1Qqpyo7Csjds1JUZ3aRLIAvXqKRXc5t51cdA3IFODiZN8TliwpJalZ9VNtOB6geveijmG3t0ktsOf27Ul/EPbXA53AjgUXqEDW1yYudrr1qfMs0t0kRydp4xTRQGyqt08yGSbftOOue9ZNq2o+SY4JlDLwHA5oW3lkuCbKEkFjzRV9Z/y60iCj1E85PJND0rHLKKpMO0zxbdur2ur7nkThMKMAU/OpafLYKIpVZ2PCgYNTlla/iIi7R5Yj6iKEW3a1vi6NkDrii3Y/1/mmVxu7yMYiK5x1Y1nFd6urmRjFcD8obpQNlcrKhVn5Pesr+9FgoKSYHt7ml/whSKOz1WO6zGQVkXquOlfrmMMKVeHp2v5GuHUAgY4p1OuRxSsB4dFribQBKwx+cZpvputBbpDE6Dd1bdxUqdLu40EjwMUIzkc0dpuneeIyNuS2K2SqjMrsvku3ldWRg6k8GjBA8xJXOSMFaz0vT47OArLzxnBr7davHZWzscAgHBNZPdGvw3sytgxjmcDd0zSy7jEfiOGdVGw85B6GobVNYvLq5bdO6KTkKpomK9l0h7S4Gofi1lGZoSGDRHPQ56+/FW+bqyX0V0WmoTR3F4UyOBSKKz2XwJHAbinV3bKRBcRcrMvWhlgdZxlSVx1qcWOzfSljtbzzHHLN1orWminvIE7bueeMUPa2Ul1PsOV8oZOB1qQ8Q6zK2oPbW0pCR+ln7k0YxcnoEpKK2elNeWUFsIo5FZ8dB0FKbhrmYbYYgF7kCoOaI2ul299DrPmzyk77ZQwaL7k8HPxTnw74okVxBd+pW4DineNpWKsibooIwbYgZ9XyaD1FnmcFzk54x2pg0kUh3oo55yaLW3t3RdwUk+9TKBHhW8j/AA5jA5B5JNUEjZ78VL2kZ0+7AiA2ucntT4S5UEsD9qWQEeBRXN0AAkj46YzVh4dEcFqZZVGRz06UnfwfrcGGa0Y8ZwOcU7isntNNTduVyuGB7VqnTIxi09hX80vLydorbPPGe1aalpV6NLknujnYuSFFB6bbyR5ktm9XfFO4dVlMDW91taMjDA9xUHp6K+Hml4+LljjqePtWG6WeX1uzFu5Oc1az+D7K8uC0N28URPAZQ2Psc04tPC+l2Ef4e1Iurh/qeQfSPsOlWeVJEljbYZ4eYXejW1syjdEgBJp4ukw+WpLAYGeKlb6f/wAcuIbddwDjOWGAa3m8VGGDnC9uvWsrTbtGlLQ0v7+20mzuRn+pg7fmvHrjeJpfM5YsSa9MtbNvE9o0+87VyOB3rqHwfpuoacbW62w3aH0yqef1HcVXHNQ7JTi5dHljTys+XYkYxz7Ux0iGS4nQRqfVIAMU9u/4dX8MrFbm1dAeu/H+KpfDXh6z0LFzdzLczKPQsQyqfv1NXlkjWiUccrBJtO1K0txtQsB0x1oe31CeK5C3TGP71R3ms+YSv0qegxU7rEcc0asAQ/uBUFssxy9ws8QKtkD+4HmgLvxDLZwlIY2aUcAnpS/TrkRL5Rl5I6GgtaK2+DFIJZH6qvOKeEU3TEk3Wj0wXwMYAhUn78VP6zO105hWJBnqFWmNtqeoRzO7paSxt0Qw4x9jRb63FjCaXCjH6iDj/FR+kf01zba6I6OVLOJoxsR/c18giS5PMwYn8tba1DFPcF4Y2XJ5GaAt2lgkwD5Q/wBoru+iG/Sos7GOaMRyI7IP7c4Bo+3tre2m3rFbwkc+kljSO1u2K5XhR1ZjkmiZL0lcJnOOTU7Ho08TS22oWpjlG9selgOlROlwpNqmy8Akihbp+aqKaG5vGwDtUfrQS6DNBOXiJDZySR1qkWqCXOl3dnDbiK2WJAex4oaXTraW4FxNbO+M5eKXJH6VPWk08OFmGCp6jpTOC9VSc5Ruzqf+aV6AFzW4tmHlOZIm6eZ1H3pRdXUltOVQKFPYHINGX16XhBkboeHx9J9jSG8vdkgE0W7/AHDg/wDdcnZwcFSaQO5Vc9awvzFADunBHbFJ5pDNJmOV2X26EVx5Mjt1Z19jVFomz5sFzMZMDA7gYNc2iQXF40Mu4FhgH2re6sbqK1Bt7eVww/tXJpbCLhGYPBJFL0w67c1VJvok3RaQXEgOPf8AaiNwk4f0596Di3xndGxyPbtWoLO5aZmweM15h6AJq0Txxb42J+KSx6kok2THk+wqhvgXgZcHGOKjJ4GNzhsjHvWrFTRnyWmOZdUgi2lSSMcD2r5a65GzYzwTyaWG3jlT0sM96zFjJ5e2M5HxT8UJbLG1v4pACDx2NFi4Azls+9StlFcRYVxhQO9bC6klZlUkDP71NxoomOnuY3bBx8GsZ5xGoJIIbvSTfcKNqqWwcis5ZLtlYbSVPUe1FRBY+S6LR7shgOHU9xWE6wxsN4LQtyPipqO/u4Tkn45rhdSnmUxFzz0+KdQFcx/NDbwnzA4ZMcGttMuIJrtTIp8vuduanEhnHUswbt7VRaZa/wBIeooxHFN0DsurDUtJijWFHxn8w4ou9s9LvIw8sasOxC815+8GpwyekpLHnnsRTGC4uIcGG5eNu4zil5r9O4NeAqXG4qgwGzyTX6aby0Ik9+ooHCxhWVtynlWFZzzib0yuQezf/ayJbNLf4fJ9XP0hjigzJHdH1pux1x1rKeIxthhlT0IppoUERtppSPUvUn2rPaljy3BjMeQoLZyO1UdrcwNsjvoVmVDgSL1Uf5FDTaXaea7QTllz6Tg4NP9KJ8LJs2fqJbJJ71xJYoTlTg9ge9UR04o2eHHUexrk6WXGdoAz+1FZv9O+RhY3sTxpDKCpjGNrd6a6fHBIYiIwwmY9D0FCroyTMBLgj3HBraLRDbSB7S7kUjovcUftEHzkP4o4IZBbyZBYnBNTOvwxyXxSNiUTjii5LK4mnEks7yN98VvCsAk2vDhumfeleVLoZY36KbCyIO5Wx8GqO3hkKL5bB2PseR+lfDHCif6fl7u45X/qh3kMJDBsY7g8VFy5FEqCbl3QlXXkdeOaSajfKgIDg/Br5qeskId7kn5NSGoak9yx5q2LE5MlkyJI//2Q==';
 
@@ -73,8 +76,9 @@ export default function App() {
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
   const [demoTyping, setDemoTyping] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [page, setPage] = useState<'practice' | 'dashboard' | 'keyboard'>('practice');
   const [activity, setActivity] = useState<ActivitySummary>(readActivitySummary);
+  const [keyMetrics, setKeyMetrics] = useState<KeyMetrics>(readKeyMetrics);
   const timers = useRef<number[]>([]);
   const sequenceRunning = useRef(false);
 
@@ -315,7 +319,7 @@ export default function App() {
   );
 
   return (
-    <div className={`app${settings.reducedMotion ? ' reduce-motion' : ''}`}>
+    <div className={`app theme-${settings.theme ?? 'light'}${settings.reducedMotion ? ' reduce-motion' : ''}`}>
       <a className="skip-link" href="#main">Skip to the book</a>
 
       <header className="app-header">
@@ -323,9 +327,14 @@ export default function App() {
           <h1 className="brand-name">KeyTurn</h1>{customBook && <p className="brand-tag">Practising: {customBook.title}</p>}
           <p className="brand-tag">Your Personal Memory Edition</p>
         </div>
+        <nav className="app-nav" aria-label="Primary navigation">
+          <button className={page === 'practice' ? 'is-active' : ''} type="button" onClick={() => setPage('practice')}>Practice</button>
+          <button className={page === 'dashboard' ? 'is-active' : ''} type="button" onClick={() => setPage('dashboard')}>Insights</button>
+          <button className={page === 'keyboard' ? 'is-active' : ''} type="button" onClick={() => setPage('keyboard')}>Keyboard</button>
+        </nav>
         <FlowSteps phase={phase} />
         {showBook && <div className="header-actions">{customBook && <button type="button" className="btn" onClick={saveBookAndProgress}>Save book &amp; progress</button>}<button type="button" className="btn" onClick={openPdfSetup}>{customBook ? 'PDF / AI options' : 'Choose a PDF'}</button></div>}
-        <button type="button" className="btn" onClick={() => setDashboardOpen(true)} aria-haspopup="dialog">Activity dashboard</button>
+        <button type="button" className="btn" onClick={() => setPage('dashboard')}>Activity dashboard</button>
         <SettingsMenu
           settings={settings}
           onChange={updateSettings}
@@ -340,6 +349,7 @@ export default function App() {
       </header>
 
       <main id="main" className="app-main" tabIndex={-1}>
+        {page === 'dashboard' ? <ActivityDashboard state={state} summary={summary} passages={passages} activity={activity} fullPage onClose={() => setPage('practice')} /> : page === 'keyboard' ? <KeyboardCoach metrics={keyMetrics} /> : <>
         {phase === 'onboarding' && <Onboarding initialBook={customBook} onStart={startBook} />}
 
         {showBook && (
@@ -396,6 +406,7 @@ export default function App() {
                   complete={isComplete(leftProgress.typed, leftPassage.text)}
                   ariaLabel="Type the passage on the left page"
                   onType={handleType}
+                  onKeyAttempt={(key, correct) => setKeyMetrics(recordKeyAttempt(key, correct))}
                 />
               }
               memory={
@@ -409,13 +420,14 @@ export default function App() {
                     complete={isComplete(rightProgress.typed, rightPassage.text)}
                     ariaLabel="Type the passage on the right page"
                     onType={handleType}
+                    onKeyAttempt={(key, correct) => setKeyMetrics(recordKeyAttempt(key, correct))}
                   />
                 ) : <p className="prose">You have reached the end of Small Wonders.</p>
               }
             />
             <StatsPanel book={summary} totalPages={passages.length} />
           </>
-        )}
+        )}</>}
 
         {phase === 'finished' && (
           <FinishedBook
@@ -489,8 +501,6 @@ export default function App() {
           )}
         </>
       )}
-
-      {dashboardOpen && <ActivityDashboard state={state} summary={summary} passages={passages} activity={activity} onClose={() => setDashboardOpen(false)} />}
 
       {confirmingReset && <ConfirmDialog onConfirm={confirmReset} onCancel={() => setConfirmingReset(false)} />}
     </div>

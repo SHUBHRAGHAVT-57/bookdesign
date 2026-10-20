@@ -70,6 +70,7 @@ export function isAppState(value: unknown, passages: Passage[] = PASSAGES): valu
   if (!isRecord(value.recall) || !isRecord(value.echo) || !isRecord(value.weakWords)) return false;
   if (!isRecord(value.settings)) return false;
   if (typeof value.settings.sound !== 'boolean' || typeof value.settings.reducedMotion !== 'boolean') return false;
+  if (value.settings.theme !== undefined && value.settings.theme !== 'light' && value.settings.theme !== 'dark') return false;
   if (!Object.values(value.pages).every(isProgress)) return false;
 
   const passage = passages[value.pageIndex];

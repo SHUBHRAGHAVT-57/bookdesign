@@ -57,9 +57,10 @@ interface TypingPageProps {
   complete: boolean;
   ariaLabel: string;
   onType: (raw: string) => void;
+  onKeyAttempt?: (key: string, correct: boolean) => void;
 }
 
-export default function TypingPage({ passageId, target, map, typed, disabled, complete, ariaLabel, onType }: TypingPageProps) {
+export default function TypingPage({ passageId, target, map, typed, disabled, complete, ariaLabel, onType, onKeyAttempt }: TypingPageProps) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
   const [errorIndex, setErrorIndex] = useState<number | null>(null);
@@ -105,10 +106,12 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
     if (raw.length > typed.length && raw.slice(0, typed.length) === typed) {
       const entered = raw[typed.length];
       if (entered !== target[typed.length]) {
+        onKeyAttempt?.(entered, false);
         setErrorIndex(typed.length);
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(45);
         return;
       }
+      onKeyAttempt?.(entered, true);
       setErrorIndex(null);
     } else if (raw.length < typed.length) {
       setErrorIndex(null);

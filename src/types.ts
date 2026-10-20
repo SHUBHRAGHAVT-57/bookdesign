@@ -33,6 +33,8 @@ export type Transition = 'idle' | 'success' | 'turning';
 export interface Settings {
   sound: boolean;
   reducedMotion: boolean;
+  /** Optional so existing local saves remain valid after the theme upgrade. */
+  theme?: 'light' | 'dark';
 }
 
 // ---------- Typing ----------

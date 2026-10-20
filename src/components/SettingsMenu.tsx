@@ -94,6 +94,17 @@ export default function SettingsMenu({
             <label className="toggle">
               <input
                 type="checkbox"
+                checked={settings.theme === 'dark'}
+                onChange={(e) => onChange({ ...settings, theme: e.target.checked ? 'dark' : 'light' })}
+              />
+              <span>
+                Dark mode
+                <small>Switches the workspace, dashboard and keyboard coach together.</small>
+              </span>
+            </label>
+            <label className="toggle">
+              <input
+                type="checkbox"
                 checked={settings.reducedMotion}
                 onChange={(e) => onChange({ ...settings, reducedMotion: e.target.checked })}
               />
