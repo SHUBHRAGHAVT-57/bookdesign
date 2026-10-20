@@ -7,6 +7,7 @@
 - Recall question per page, scored separately from typing.
 - Echo Review (deterministic weak-word scoring) and Echo returns in a Memory Round, with a first-try "mastered" status.
 - Memory Report, page history (read-only look back), Copy summary, Demo assist for presenters.
+- Local activity dashboard for typing speed, accuracy, active time, recall, Echo reviews, page progress and browser visits; no account login analytics are claimed.
 - Local persistence with validation, error boundary, service-worker offline support, unit and browser tests.
 - Import text-based PDFs in the browser, split extracted text into practice passages, generate local questions, and save the selected book/progress in browser storage.
 - Optional Gemini question enhancement with explicit opt-in and server-side API key handling.
