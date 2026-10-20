@@ -58,12 +58,13 @@ export default function ActivityDashboard({ state, summary, passages, activity, 
           <article className="activity-card"><span>Active typing time</span><strong>{formatDuration(summary.activeMs)}</strong><p>Idle time is excluded by the typing timer</p></article>
           <article className="activity-card"><span>Recall score</span><strong>{recallPercent}%</strong><p>{summary.recallCorrect} correct of {summary.recallAnswered} answered</p></article>
           <article className="activity-card"><span>Characters attempted</span><strong>{totalKeys.toLocaleString()}</strong><p>{corrected} corrections made with backspace</p></article>
+          <article className="activity-card"><span>Echo reviews solved</span><strong>{summary.echoSolved}</strong><p>Memory review exercises solved</p></article>
           <article className="activity-card"><span>Reading progress</span><strong>{summary.pagesCompleted}<small> / {passages.length} pages</small></strong><p>{percent(summary.pagesCompleted, passages.length)}% of this book completed</p></article>
         </div>
 
         <div className="activity-lower">
           <section className="activity-section">
-            <div className="activity-section-title"><h3>Visits · last 7 days</h3><span>{activity.totalSessions} total</span></div>
+            <div className="activity-section-title"><h3>Visits · last 7 days</h3><span>{activity.sessions.length} recorded</span></div>
             <div className="activity-bars" role="img" aria-label="App visits for the last seven days">
               {days.map((day) => (
                 <div className="activity-bar-column" key={day.date.toISOString()}>
@@ -73,7 +74,7 @@ export default function ActivityDashboard({ state, summary, passages, activity, 
                 </div>
               ))}
             </div>
-            <p className="activity-muted">{uniqueDays} active calendar days recorded on this browser.</p>
+            <p className="activity-muted">{uniqueDays} active calendar days recorded on this browser. Visit history retains up to the latest 365 app opens.</p>
           </section>
           <section className="activity-section">
             <div className="activity-section-title"><h3>Page performance</h3><span>{completedWords.toLocaleString()} / {totalWords.toLocaleString()} words typed</span></div>
