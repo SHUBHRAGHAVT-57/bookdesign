@@ -1,0 +1,103 @@
+name: Draft KeyTurn LinkedIn Post
+
+on:
+  workflow_dispatch:
+    inputs:
+      milestone:
+        description: "Real milestone completed (for example, improved typing flow)"
+        required: true
+        type: string
+      changes:
+        description: "What actually changed? Include verified implementation details."
+        required: true
+        type: string
+      challenge:
+        description: "A real challenge or trade-off encountered"
+        required: true
+        type: string
+      lesson:
+        description: "What you learned or would improve next"
+        required: true
+        type: string
+      project_url:
+        description: "Public KeyTurn repository or demo URL (optional)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    name: Generate an unpublished draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require an OpenAI API key
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::Add OPENAI_API_KEY under Settings > Secrets and variables > Actions before running this workflow."
+            exit 1
+          fi
+
+      - name: Generate draft from supplied facts
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MILESTONE: ${{ inputs.milestone }}
+          CHANGES: ${{ inputs.changes }}
+          CHALLENGE: ${{ inputs.challenge }}
+          LESSON: ${{ inputs.lesson }}
+          PROJECT_URL: ${{ inputs.project_url }}
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg milestone "$MILESTONE" \
+            --arg changes "$CHANGES" \
+            --arg challenge "$CHALLENGE" \
+            --arg lesson "$LESSON" \
+            --arg project_url "$PROJECT_URL" \
+            '{
+              model: "gpt-4.1-mini",
+              input: [
+                {
+                  role: "system",
+                  content: [{
+                    type: "input_text",
+                    text: "Write a natural first-person LinkedIn draft for a developer sharing a real project milestone. Use only facts provided by the user. Never invent metrics, users, results, features, or claims. Avoid generic AI hype, engagement bait, and exaggerated claims. Include a concise opening, what changed, one honest challenge or lesson, and a low-pressure closing. Add the project URL only if supplied. Use 3-5 relevant hashtags. Output only the post text and a short separate section titled Review before posting with 3 factual checks. This is a draft for human approval; do not publish it."
+                  }]
+                },
+                {
+                  role: "user",
+                  content: [{
+                    type: "input_text",
+                    text: ("Milestone: " + $milestone + "\nVerified changes: " + $changes + "\nChallenge: " + $challenge + "\nLesson: " + $lesson + "\nProject URL: " + $project_url)
+                  }]
+                }
+              ]
+            }' > request.json
+
+          curl --fail-with-body --silent --show-error \
+            https://api.openai.com/v1/responses \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d @request.json > response.json
+
+          jq -er '[.output[]?.content[]? | select(.type == "output_text") | .text] | join("\n\n") | select(length > 0)' response.json > linkedin-draft.md
+          {
+            echo "# LinkedIn draft — human approval required"
+            echo
+            echo "Generated from the milestone details submitted to this workflow."
+            echo "Review every factual claim, edit in your own voice, and publish manually."
+            echo
+            cat linkedin-draft.md
+          } > final-draft.md
+
+      - name: Upload draft for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyturn-linkedin-draft
+          path: final-draft.md
+          if-no-files-found: error
+          retention-days: 14
