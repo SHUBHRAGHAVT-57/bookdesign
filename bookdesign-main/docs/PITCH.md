@@ -13,23 +13,20 @@ exactly the words you stumbled on.
 | 0:00 – 0:20 | **Hook** | "Think of the last chapter you read. Close your eyes. What can you actually remember?" Pause. "Most of us read, nod, and forget." |
 | 0:20 – 0:45 | **Problem** | Re-reading and highlighting feel productive but are weak study techniques (see `IMPACT.md`, label: *to verify*). Typing tools train speed on random text and never ask whether you understood anything. |
 | 0:45 – 1:05 | **Solution** | Point at the cover. "KeyTurn is a book you write yourself. **Read** the left page, **Type** it into your own page, **Recall** one idea, **Review** the words you struggled with, **Remember**." |
-| 1:05 – 2:00 | **Live demo** (60 s, see below) | Auto-type with Demo assist so the story is reliable. Narrate the ink, the typo and correction, the page turn, the recall question, the Echo card. |
+| 1:05 – 2:00 | **Live demo** (60 s, see below) | Auto-type with Demo assist so the story is reliable. Narrate the ink, the typo and correction, recall at the spread checkpoint, the Echo card, and the page turn. |
 | 2:00 – 2:25 | **Impact** | "The report keeps typing and understanding apart on purpose. High typing accuracy never claims you understood. And the **Echo effect** line shows how many weak words you actually brought back on the first try." |
 | 2:25 – 2:45 | **Why it's different** | Starts from the reading itself, not flashcards you have to make. Review is targeted at *your* mistakes. Transparent rules, no black box. Works offline; all data stays on the device. |
 | 2:45 – 3:00 | **Next + ask** | Import your own text, teacher mode, a pilot study to measure retention. "We'd love a classroom to pilot this with." |
 
-## The 60-second live demo
+## Live demonstration
 
-1. Click **Open the demo book**. Point out: source on the left, your own page on the right, live stats pinned at the top.
-2. **Settings → Demo assist**. Pick **70 characters per second** and **photosynthesis**, then **Auto-type with correction**.
-   Narrate: *"Correct letters turn into ink. There's a typo, and Backspace fixes it."*
-3. The page turns. Answer the recall question: **oxygen**. Say: *"Scored separately from typing."*
-4. The **Echo Review** names "photosynthesis" and explains why. Fill the blank.
-5. Demo assist → **Jump to page 6**, auto-type it, answer **pollen**, finish its Echo blank, then **Finish the book**.
-6. The **Memory Report** appears with two words to bring back. In the Memory Round, answer one word from memory:
-   it flips to **mastered**. Say: *"That's the Remember step, measured, not assumed."*
+1. Click **Open the demo book** and point out the active typing page and live statistics.
+2. In **Settings → Demo assist**, choose a speed and a deliberate typo, then use **Auto-type with correction**. Explain that automatic speed is demonstration data.
+3. Complete the active spread, continuing into its second passage when needed. At the recall checkpoint, answer the displayed question; typing and recall are scored separately.
+4. Complete any Echo Review offered for a weak word, then continue through the book.
+5. Open the **Memory Report** and its returning-word round. Explain that the report records performance in this session; it does not prove long-term retention.
 
-If anything misbehaves on stage: **Reset demo** (top right) returns to the cover in one click.
+Use **Reset demo** to return to the cover after confirming deletion of saved progress. Rehearse on the exact branch and build being presented; feature branches can have different flows.
 
 ## Likely judge questions (honest answers)
 
@@ -45,9 +42,8 @@ engagement step, then ties review to what *you* actually got wrong. They are com
 Partly, and that is a real limitation. Transcription alone can be shallow, which is exactly why recall and
 targeted review are built into the flow instead of stopping at typing.
 
-**Where is the AI?**
-Deliberately absent. Echo uses a transparent score (mistyped keys, corrections, long pauses), works offline, and
-can be explained to a student or teacher. Generating questions with a model could come later, with human review.
+**How does Echo select a word?**
+Echo uses a deterministic local score based on mistyped keys, corrections and long pauses. The selection can be inspected and explained to a student or teacher. Recall grading uses the bundled accepted-answer rules.
 
 **What about privacy?**
 No accounts, no servers, no analytics. Progress lives in the browser's local storage on the learner's device.

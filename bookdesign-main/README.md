@@ -2,11 +2,19 @@
 
 Read → Type → Recall → Review → Remember.
 
-A fully offline, frontend-only hackathon MVP. Read a source passage on the left page, type it into your own
-Memory Edition on the right (correct letters turn into permanent ink), answer one recall question, and get a
-fill-in-the-blank Echo Review on a word you struggled with. Progress is saved in `localStorage`.
+A React and TypeScript study prototype: read six short bundled passages, type them into a two-page Memory Edition, answer recall questions at spread checkpoints, and revisit weak words through fill-in-the-blank Echo Review. Progress is saved in `localStorage`.
+
+Maintained by [Shubh Raghav](https://github.com/SHUBHRAGHAVT-57).
+
+**Stack:** React 19 · TypeScript · Vite · Vitest · Playwright. Offline use is available after the first production visit; no account or synchronization service is included.
+
+## Repository scope
+
+This directory contains a separate copy of the app. Prefer the [repository-root README](../README.md) for the main project; the commands below run this copy when executed from this directory. The optional PDF import and Rakhu assistant work is on [feature/polished-keyturn-app](https://github.com/SHUBHRAGHAVT-57/bookdesign/tree/feature/polished-keyturn-app), and is not part of `main`.
 
 ## Run
+
+Use Node.js 22.12+ and npm. On Windows PowerShell, use `npm.cmd` in place of `npm` if the execution policy blocks `npm.ps1`.
 
 ```bash
 npm install
@@ -17,20 +25,15 @@ npm run preview    # serve the production build
 
 Open the built app with `npm run preview` (module scripts do not load from `file://`).
 
-## Demo script
+## Try the reading flow
 
-1. **Open the demo book**, then type the first passage. Make a typo inside "photosynthesis" and fix it with Backspace.
-2. Finish the page: success state, page turn, then the recall question.
-3. Answer it. The feedback announces an **Echo Review** on the word you slipped on.
-4. Fill in the blank, continue, type a few words of page 2, and **refresh**: the exact state is restored.
-5. **Reset demo** (top right) wipes progress after confirmation.
+1. Open the demo book and type the active passage. Correct mistakes with Backspace; correct characters become ink.
+2. Continue through the two passages in the spread. At the recall checkpoint, answer the question before continuing.
+3. Complete any Echo Review offered for a weak word. The selection is based on recorded mistakes, corrections and long pauses.
+4. Type part of the next passage and refresh to check that browser-local progress resumes.
+5. Finish the book to see the Memory Report and returning-word practice. **Reset demo** clears saved progress after confirmation.
 
-### 60-second presenter run
-
-1. Open the demo book and point out the source page beside the page being written.
-2. In **Settings → Demo assist**, choose **70 characters per second** and **photosynthesis**, then run **Auto-type with correction**.
-3. Answer the recall question with “oxygen”, complete its Echo blank, then use Demo assist to jump to page 6.
-4. Auto-type page 6 with **pollination**, answer with “carries pollen”, and finish its Echo blank. The Memory Report then shows the page results and a returning-word round.
+For a presentation, **Settings → Demo assist** can auto-type the current page with a deliberate correction or jump to another page. Those automatic speed readings are demonstration data.
 
 ## Structure
 
@@ -51,12 +54,12 @@ Open the built app with `npm run preview` (module scripts do not load from `file
 | `src/components/FinishedBook.tsx` | Memory Report, Echo returns Memory Round, Copy summary |
 | `src/components/SettingsMenu.tsx` | Sound and motion toggles, Reset demo, presenter Demo assist |
 | `src/components/ErrorBoundary.tsx` | Friendly recovery screen if anything unexpected throws |
-| `public/sw.js`, `public/manifest.webmanifest` | Hand-written offline service worker and web app manifest |
+| `public/sw.js`, `public/manifest.webmanifest` | Offline service worker and web app manifest |
 | `docs/` | `PITCH.md`, `IMPACT.md`, `ROADMAP.md`, `one-pager.html`, layout screenshots |
 
 ## How Echo Review picks a word
 
-Local and transparent, no AI model: each mistyped key scores 2, each correction 1, each long pause (2.5 s+) 1.5
+Echo uses deterministic local scoring: each mistyped key scores 2, each correction 1, each long pause (2.5 s+) 1.5
 (each capped at 3 events). A word scoring 3 or more on the page is "weak". If typing was clean but the recall
 answer missed, the question's key concept is used instead.
 
