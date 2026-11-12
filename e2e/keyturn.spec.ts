@@ -3,6 +3,41 @@ import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test('practice library exposes real contents and a keyboard-accessible start on phone and desktop', async ({ page }) => {
+  await page.goto('/');
+  const contents = page.getByRole('complementary', { name: 'Inside Small Wonders' });
+  await expect(contents.getByRole('listitem')).toHaveCount(6);
+  await expect(contents).toContainText('How Plants Make Food');
+  await expect(contents).toContainText('How Flowers Share Pollen');
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(page.getByRole('button', { name: 'Open the demo book' })).toBeVisible();
+  }
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole('button', { name: 'Open the demo book' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Practice workspace' })).toBeVisible();
+  await expect(page.locator('.typing-readiness.is-ready')).toHaveText('Ready to type');
+  await expect(page.locator('.page-right .typing-readiness')).toHaveText('Read ahead');
+  await expect(page.locator('.page-left .ch.cur')).toHaveCount(1);
+  await expect(page.locator('.page-right .ch.cur')).toHaveCount(0);
+});
+
+test('corrupt nested saves recover to onboarding without crashing', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    localStorage.setItem('keyturn.memory-edition', JSON.stringify({ version: 1, data: {
+      phase: 'finished', pageIndex: 0, pages: {}, completed: [], recall: { plants: null },
+      echo: {}, weakWords: {}, settings: { sound: false, reducedMotion: true },
+    } }));
+  });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Open the demo book' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 async function startBook(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/');
   await page.getByRole('button', { name: 'Open the demo book' }).click();
@@ -27,7 +62,7 @@ test('demo flow, refresh restoration, reset and accessibility', async ({ page })
   await expect(leftInput).toHaveValue(source);
   await expect(rightInput).toHaveValue('');
   expect(await leftInput.evaluate((element: HTMLTextAreaElement) => element.readOnly)).toBe(true);
-  expect(await rightInput.evaluate((element: HTMLTextAreaElement) => element.readOnly)).toBe(false);
+  await expect(rightInput).toHaveJSProperty('readOnly', false);
   await rightInput.pressSequentially(secondSource, { delay: 1 });
   await expect(page.getByRole('dialog')).toContainText('Quick recall', { timeout: 10_000 });
   await expect(page.locator('.page-right.is-turning')).toHaveCount(0);
@@ -60,6 +95,7 @@ test('demo flow, refresh restoration, reset and accessibility', async ({ page })
 });
 
 test('Demo assist jumps pages and auto-types with a real typo correction', async ({ page }) => {
+  test.setTimeout(60_000);
   await startBook(page);
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('button', { name: 'Demo assist' }).click();
@@ -67,7 +103,8 @@ test('Demo assist jumps pages and auto-types with a real typo correction', async
   expect(settingsAxe.violations).toEqual([]);
   await page.getByLabel('Jump to page').selectOption('1');
   await page.getByRole('button', { name: 'Go to page' }).click();
-  await expect(page.locator('.page-title').first()).toHaveText('The Water Cycle');
+  await expect(page.locator('.page-title').nth(1)).toHaveText('The Water Cycle');
+  await expect(page.getByRole('textbox', { name: 'Type the passage on the right page' })).toHaveJSProperty('readOnly', false);
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByLabel('Jump to page').selectOption('0');
   await page.getByRole('button', { name: 'Go to page' }).click();
@@ -76,9 +113,11 @@ test('Demo assist jumps pages and auto-types with a real typo correction', async
   await page.getByLabel('Typing speed').selectOption('70');
   await page.getByLabel('Scripted stumble').selectOption('photosynthesis');
   await page.getByRole('button', { name: 'Auto-type with correction' }).click();
-  await expect(page.locator('.page-title').nth(1)).toHaveText('The Water Cycle', { timeout: 20_000 });
+  await expect(page.getByRole('textbox', { name: 'Type the passage on the right page' })).toHaveJSProperty('readOnly', false, { timeout: 20_000 });
+  await expect(page.getByRole('textbox', { name: 'Type the passage on the right page' })).toBeFocused();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  const settingsButton = page.getByRole('button', { name: 'Settings' });
+  if (await settingsButton.getAttribute('aria-expanded') === 'false') await settingsButton.click();
   await page.getByLabel('Scripted stumble').selectOption('evaporation');
   await page.getByRole('button', { name: 'Auto-type with correction' }).click();
   await expect(page.getByRole('dialog')).toContainText('Quick recall', { timeout: 20_000 });

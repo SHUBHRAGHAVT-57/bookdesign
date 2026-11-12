@@ -42,7 +42,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value);
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+function isWordStat(value: unknown): boolean {
+  return isRecord(value) && isNumber(value.errors) && isNumber(value.corrections) && isNumber(value.pauses);
+}
+
+function isWeakStats(value: unknown): boolean {
+  return isWordStat(value) && isRecord(value) && isNumber(value.score);
+}
+
+function isCandidate(value: unknown): value is Record<string, unknown> {
+  return isRecord(value) && typeof value.word === 'string' && typeof value.reason === 'string';
 }
 
 function isProgress(value: unknown): boolean {
@@ -51,6 +63,12 @@ function isProgress(value: unknown): boolean {
   }
   const m = value.metrics;
   return (
+    Object.values(value.wordStats).every(isWordStat) &&
+    (value.weak === null || (isCandidate(value.weak) && isWeakStats(value.weak.stats))) &&
+    (value.echo === null || (isCandidate(value.echo) &&
+      (value.echo.source === 'typing' || value.echo.source === 'recall') &&
+      (value.echo.stats === null || isWeakStats(value.echo.stats)))) &&
+    (value.completedAt === null || isNumber(value.completedAt)) &&
     isNumber(m.totalTyped) &&
     isNumber(m.correctKeystrokes) &&
     isNumber(m.incorrectKeystrokes) &&
@@ -71,6 +89,14 @@ export function isAppState(value: unknown): value is AppState {
   if (!isRecord(value.settings)) return false;
   if (typeof value.settings.sound !== 'boolean' || typeof value.settings.reducedMotion !== 'boolean') return false;
   if (!Object.values(value.pages).every(isProgress)) return false;
+  if (!value.completed.every((id) => typeof id === 'string' && PASSAGES.some((p) => p.id === id))) return false;
+  if (!Object.values(value.recall).every((r) => isRecord(r) && typeof r.answer === 'string' && typeof r.correct === 'boolean')) return false;
+  if (!Object.values(value.echo).every((e) => isRecord(e) && typeof e.word === 'string' &&
+    typeof e.solved === 'boolean' && isNumber(e.attempts) && typeof e.revealed === 'boolean')) return false;
+  if (!Object.values(value.weakWords).every((w) => isRecord(w) && isNumber(w.score) &&
+    Array.isArray(w.pages) && w.pages.every((id) => typeof id === 'string') && typeof w.reviewed === 'boolean' &&
+    (w.returnAttempts === undefined || isNumber(w.returnAttempts)) &&
+    (w.returnSolved === undefined || typeof w.returnSolved === 'boolean'))) return false;
 
   const passage = PASSAGES[value.pageIndex];
   const page = value.pages[passage.id] as { typed?: string; echo?: unknown } | undefined;
