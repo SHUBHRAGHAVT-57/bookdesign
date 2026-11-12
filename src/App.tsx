@@ -252,8 +252,8 @@ export default function App() {
 
       <header className="app-header">
         <div className="brand">
-          <h1 className="brand-name">KeyTurn</h1>
-          <p className="brand-tag">Your Personal Memory Edition</p>
+          <svg className="brand-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect x="3" y="3" width="30" height="30" rx="8" stroke="currentColor" strokeWidth="1.5"/><path d="M12 11v14m12-14-10 7 10 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <div><h1 className="brand-name">KeyTurn</h1><p className="brand-tag">Your practice, one page at a time.</p></div>
         </div>
         <FlowSteps phase={phase} />
         <SettingsMenu
@@ -274,6 +274,7 @@ export default function App() {
 
         {showBook && (
           <>
+            <div className="session-heading"><div><h2>Practice workspace</h2><p>{PASSAGES.length} passages · Memory Edition</p></div><span className="session-state">{reviewIndex !== null ? 'Reviewing a completed page' : phase === 'typing' ? 'Type at your own pace' : 'Take a moment to recall'}</span></div>
             <LiveStats
               page={summarizePage(progress, passage.text)}
               pageNumber={displayIndex + 1}
@@ -362,6 +363,8 @@ export default function App() {
           </p>
         )}
       </main>
+
+      <footer className="app-footer"><span>KeyTurn · Personal Memory Edition</span><span>On this device. At your pace.</span></footer>
 
       {phase === 'recall' && (
         <RecallModal

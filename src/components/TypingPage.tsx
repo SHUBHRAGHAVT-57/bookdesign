@@ -107,6 +107,7 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
 
   return (
     <div className="typing">
+      <p className={`typing-readiness${!disabled && !complete ? ' is-ready' : ''}`}>{complete ? 'Completed' : disabled ? 'Read ahead' : 'Ready to type'}</p>
       <div className={`typing-area${focused ? ' is-focused' : ''}`}>
         <p className="prose typed-text" aria-hidden="true">
           {map.words.map((word, index) => {
@@ -118,7 +119,7 @@ export default function TypingPage({ passageId, target, map, typed, disabled, co
                 key={index}
                 chars={target.slice(word.start, groupEnd)}
                 typedPart={typed.slice(word.start, groupEnd)}
-                cursor={inGroup ? typed.length - word.start : -1}
+                cursor={!disabled && !complete && inGroup ? typed.length - word.start : -1}
                 wordLength={word.end - word.start}
               />
             );
